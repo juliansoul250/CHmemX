@@ -7,7 +7,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/juliansoul250/CHmemX",
-      "revision": "381539504091154c824db06ccfe67c4c757bb045"
+      "revision": "10f2a4d6f575876ae51c328c50dc1247bbbf33bd"
     },
     "viewBox": [1200, 650]
   },
@@ -16,7 +16,7 @@
       "id": "source-agents",
       "type": "external",
       "label": "Source agents",
-      "sublabel": "read Active · upload only",
+      "sublabel": "read Active, upload only",
       "pos": [30, 90],
       "size": [150, 64],
       "sources": [{"path": "skills/memory-graph/SKILL.md", "line": 24, "label": "permissions"}]
@@ -34,7 +34,7 @@
       "id": "curator",
       "type": "backend",
       "label": "Central curator",
-      "sublabel": "dedupe · compare · route",
+      "sublabel": "dedupe, compare, route",
       "pos": [410, 90],
       "size": [160, 64],
       "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "curation"}]
@@ -60,7 +60,7 @@
       "id": "git-store",
       "type": "database",
       "label": "Active Memory Git",
-      "sublabel": "atomic commit + history",
+      "sublabel": "atomic commit, full history",
       "pos": [1000, 90],
       "size": [160, 64],
       "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "approve"}]
@@ -69,7 +69,7 @@
       "id": "content-grid",
       "type": "database",
       "label": "Content grid",
-      "sublabel": "topics + project cells",
+      "sublabel": "topics and project cells",
       "pos": [500, 390],
       "size": [170, 64],
       "sources": [{"path": "examples/content-directory.example.json", "line": 1, "label": "taxonomy"}]
@@ -78,7 +78,7 @@
       "id": "vector-pointer",
       "type": "backend",
       "label": "Vector pointer",
-      "sublabel": "cell hit + graph expansion",
+      "sublabel": "cell match and graph expansion",
       "pos": [740, 390],
       "size": [180, 64],
       "sources": [{"path": "scripts/vector_memory.py", "line": 305, "label": "recall"}]

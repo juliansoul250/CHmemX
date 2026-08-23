@@ -1,5 +1,7 @@
 # Centralized curation
 
+[简体中文](zh-CN/curation.md)
+
 Source tools have upload-only write permissions. The curator owns all normal mutations.
 
 For each curation run:

@@ -1,5 +1,7 @@
 # Security and privacy
 
+[简体中文](zh-CN/security.md)
+
 This project provides workflow integrity, provenance checks, atomic writes, and Git rollback. It
 does not authenticate agent identities and cannot stop a malicious same-user process from passing
 another Agent ID.

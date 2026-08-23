@@ -16,3 +16,4 @@ jobs:
       - run: python3 tests/test_curate_uploads.py
       - run: python3 tests/test_vector_memory.py
       - run: PYTHONPATH=runtime python3 tests/simple_memory_test.py
+      - run: python3 tests/test_docs.py

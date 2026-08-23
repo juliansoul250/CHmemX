@@ -1,5 +1,7 @@
 # Security policy
 
+[简体中文](SECURITY.zh-CN.md)
+
 Do not report real credentials in a public issue. If a vulnerability requires sensitive details,
 contact the repository owner privately through their GitHub profile.
 

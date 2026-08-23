@@ -1,5 +1,7 @@
 # Tool adapters
 
+[简体中文](zh-CN/tool-adapters.md)
+
 Every tool should expose the same `memory-graph` Skill behavior:
 
 - load the shared skill at task start;

@@ -1,5 +1,7 @@
 # CHmemX
 
+**English** | [简体中文](README.zh-CN.md)
+
 [![Tests](https://github.com/juliansoul250/CHmemX/actions/workflows/test.yml/badge.svg)](https://github.com/juliansoul250/CHmemX/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
@@ -33,24 +35,9 @@ CHmemX separates the responsibilities:
 
 ## Architecture
 
-```text
-tool-specific upload entrances
-            ↓
-      PENDING_CURATION
-            ↓
-       central curator
- provenance · secret scan · dedupe · Active comparison · routing
-            ↓
-    conflict diff + owner decision
-            ↓
- exact batch confirmation + atomic Git commit
-            ↓
-      permanent Active Memory
-            ↓
- content grid → vector pointer → all participating tools
-```
+[![CHmemX architecture](docs/assets/architecture-en.png)](docs/architecture.html)
 
-Open the [interactive source-bound architecture map](docs/architecture.html).
+Click the diagram to open the [interactive source-bound architecture map](docs/architecture.html).
 
 ## Key properties
 
@@ -222,11 +209,13 @@ schemas/agent-export-v1.schema.json
 skills/memory-graph/SKILL.md       portable shared Skill
 examples/                          synthetic upload and content-grid templates
 docs/                              architecture, quick start, curation, security, adapters
+docs/zh-CN/                        complete Simplified Chinese documentation
 tests/                             acceptance tests with synthetic data
 ```
 
 ## Documentation
 
+- [Simplified Chinese documentation](docs/zh-CN/README.md)
 - [Quick start](docs/quickstart.md)
 - [Architecture](docs/architecture.md)
 - [Centralized curation](docs/curation.md)
@@ -252,11 +241,13 @@ python3 tests/test_assemble_inventory.py
 python3 tests/test_curate_uploads.py
 python3 tests/test_vector_memory.py
 PYTHONPATH=runtime python3 tests/simple_memory_test.py
+python3 tests/test_docs.py
 ```
 
 The test suite covers provenance validation, secret quarantine, candidate isolation, exact owner
 confirmation, atomic commits, supersession, project isolation, centralized conflict review, stale
-vector indexes, and cross-project vector routing.
+vector indexes, and cross-project vector routing. Documentation tests verify bilingual entrypoints,
+architecture assets, and every repository-relative Markdown link.
 
 ## Non-goals
 

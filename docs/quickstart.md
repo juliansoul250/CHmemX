@@ -1,5 +1,7 @@
 # Quick start
 
+[简体中文](zh-CN/quickstart.md)
+
 ## Environment
 
 ```bash
