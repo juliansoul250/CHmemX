@@ -70,6 +70,10 @@ docs/                             architecture, curation, security, adapters
 tests/                            acceptance tests
 ```
 
+Open the [interactive architecture map](docs/architecture.html). It is source-bound to the first
+public code commit and passed all 9 showcase checks plus four desktop containment checks in light
+and dark themes.
+
 ## Security boundary
 
 This prevents normal workflow mistakes; it is not an OS security boundary against a malicious

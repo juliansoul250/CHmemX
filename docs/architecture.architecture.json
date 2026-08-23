@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Shared Agent Memory Graph",
+    "output": "architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/juliansoul250/shared-agent-memory-graph",
+      "revision": "381539504091154c824db06ccfe67c4c757bb045"
+    },
+    "viewBox": [1200, 650]
+  },
+  "components": [
+    {
+      "id": "source-agents",
+      "type": "external",
+      "label": "Source agents",
+      "sublabel": "read Active · upload only",
+      "pos": [30, 90],
+      "size": [150, 64],
+      "sources": [{"path": "skills/memory-graph/SKILL.md", "line": 24, "label": "permissions"}]
+    },
+    {
+      "id": "upload-schema",
+      "type": "messagebus",
+      "label": "Pending uploads",
+      "sublabel": "schema + provenance",
+      "pos": [220, 90],
+      "size": [150, 64],
+      "sources": [{"path": "scripts/assemble_inventory.py", "line": 242, "label": "validation"}]
+    },
+    {
+      "id": "curator",
+      "type": "backend",
+      "label": "Central curator",
+      "sublabel": "dedupe · compare · route",
+      "pos": [410, 90],
+      "size": [160, 64],
+      "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "curation"}]
+    },
+    {
+      "id": "conflict-gate",
+      "type": "security",
+      "label": "Conflict gate",
+      "sublabel": "current vs incoming diff",
+      "pos": [610, 90],
+      "size": [160, 64],
+      "sources": [{"path": "docs/curation.md", "line": 1, "label": "policy"}]
+    },
+    {
+      "id": "owner",
+      "type": "external",
+      "label": "Owner decision",
+      "sublabel": "exact confirmation",
+      "pos": [810, 90],
+      "size": [150, 64]
+    },
+    {
+      "id": "git-store",
+      "type": "database",
+      "label": "Active Memory Git",
+      "sublabel": "atomic commit + history",
+      "pos": [1000, 90],
+      "size": [160, 64],
+      "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "approve"}]
+    },
+    {
+      "id": "content-grid",
+      "type": "database",
+      "label": "Content grid",
+      "sublabel": "topics + project cells",
+      "pos": [500, 390],
+      "size": [170, 64],
+      "sources": [{"path": "examples/content-directory.example.json", "line": 1, "label": "taxonomy"}]
+    },
+    {
+      "id": "vector-pointer",
+      "type": "backend",
+      "label": "Vector pointer",
+      "sublabel": "cell hit + graph expansion",
+      "pos": [740, 390],
+      "size": [180, 64],
+      "sources": [{"path": "scripts/vector_memory.py", "line": 305, "label": "recall"}]
+    },
+    {
+      "id": "all-agents",
+      "type": "external",
+      "label": "All participating tools",
+      "sublabel": "shared applicable memory",
+      "pos": [990, 390],
+      "size": [180, 64],
+      "sources": [{"path": "runtime/simple_memory.py", "line": 797, "label": "scoped recall"}]
+    }
+  ],
+  "connections": [
+    {"id": "agents-upload", "from": "source-agents", "to": "upload-schema", "variant": "security"},
+    {"id": "upload-curator", "from": "upload-schema", "to": "curator", "variant": "emphasis"},
+    {"id": "curator-conflict", "from": "curator", "to": "conflict-gate", "variant": "security"},
+    {"id": "conflict-owner", "from": "conflict-gate", "to": "owner", "variant": "security"},
+    {"id": "owner-git", "from": "owner", "to": "git-store", "variant": "security"},
+    {"id": "git-grid", "from": "git-store", "to": "content-grid", "label": "Active index", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v"},
+    {"id": "grid-vector", "from": "content-grid", "to": "vector-pointer", "label": "offline vectors", "variant": "emphasis", "labelAt": [705, 468]},
+    {"id": "vector-agents", "from": "vector-pointer", "to": "all-agents", "label": "accepted Active", "variant": "emphasis", "labelAt": [955, 468]}
+  ]
+}
