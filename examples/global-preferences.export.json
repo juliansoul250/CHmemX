@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "type": "memorygraph-agent-export-v1",
+  "export_id": "export-example-global",
+  "agent_id": "example-source-agent",
+  "tool": "example-agent",
+  "created_at": "2026-08-23T00:00:00+00:00",
+  "items": [
+    {
+      "export_item_id": "item-example-preference",
+      "scope": "global",
+      "class": "preference",
+      "key": "workflow.example.preference",
+      "body": "Example durable preference. Replace this item with an exact user-confirmed rule.",
+      "source": {
+        "kind": "user-instruction",
+        "thread_id": "example-thread",
+        "message_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "locator": "Example only; replace with the original user message locator."
+      },
+      "nodes": [
+        {
+          "id": "node-example-workflow",
+          "title": "Example workflow",
+          "keywords": ["example", "workflow"],
+          "aliases": [],
+          "related_node_ids": []
+        }
+      ],
+      "operation": "promote",
+      "expected_current_id": null,
+      "valid_from": "2026-08-23",
+      "stale_when": "Owner explicitly changes the example preference."
+    }
+  ],
+  "rejected": []
+}

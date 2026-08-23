@@ -1,0 +1,10 @@
+[project]
+name = "shared-agent-memory-graph"
+version = "0.1.0"
+description = "Local-first Git memory graph with centralized multi-agent curation"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.memory-graph/
+inbox/
+outbox/
+vector-index.json
+*.local.json

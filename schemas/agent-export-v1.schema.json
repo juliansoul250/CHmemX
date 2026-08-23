@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MemoryGraph source-agent export",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "type",
+    "export_id",
+    "agent_id",
+    "tool",
+    "created_at",
+    "items",
+    "rejected"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "type": { "const": "memorygraph-agent-export-v1" },
+    "export_id": { "$ref": "#/$defs/id" },
+    "agent_id": { "$ref": "#/$defs/id" },
+    "tool": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "created_at": { "type": "string", "minLength": 20, "maxLength": 64 },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "rejected": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["export_item_id", "reason"],
+        "properties": {
+          "export_item_id": { "$ref": "#/$defs/id" },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 256 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{2,95}$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "keywords", "aliases", "related_node_ids"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "keywords": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "aliases": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "related_node_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "user_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "thread_id", "message_digest", "locator"],
+      "properties": {
+        "kind": { "const": "user-instruction" },
+        "thread_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "message_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "locator": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "git_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "project_root",
+        "path",
+        "commit",
+        "hash",
+        "locator",
+        "require_current_head"
+      ],
+      "properties": {
+        "kind": { "const": "git" },
+        "project_root": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "locator": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "require_current_head": { "type": "boolean" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "export_item_id",
+        "scope",
+        "class",
+        "key",
+        "body",
+        "source",
+        "nodes",
+        "operation",
+        "valid_from",
+        "stale_when"
+      ],
+      "properties": {
+        "export_item_id": { "$ref": "#/$defs/id" },
+        "scope": { "enum": ["global", "project"] },
+        "class": { "enum": ["decision", "preference", "lesson", "state", "evidence"] },
+        "key": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 524288 },
+        "source": {
+          "oneOf": [
+            { "$ref": "#/$defs/user_source" },
+            { "$ref": "#/$defs/git_source" }
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "operation": { "enum": ["promote", "supersede"] },
+        "expected_current_id": {
+          "oneOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        },
+        "valid_from": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "stale_when": { "type": "string", "minLength": 1, "maxLength": 1024 }
+      }
+    }
+  }
+}

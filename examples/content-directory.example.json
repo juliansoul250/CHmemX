@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "type": "memorygraph-content-directory-v1",
+  "directory_id": "shared-memory-project",
+  "title": "Shared Memory Project",
+  "organization": "content-first",
+  "cells": [
+    {
+      "id": "grid-governance",
+      "title": "Memory governance",
+      "keywords": ["memory", "upload", "pending", "curation", "owner approval"],
+      "aliases": ["governance"],
+      "member_key_prefixes": ["memory.", "workflow.memory."],
+      "member_keys": [],
+      "related_cell_ids": ["grid-workflow", "grid-projects"]
+    },
+    {
+      "id": "grid-workflow",
+      "title": "Agent workflows",
+      "keywords": ["workflow", "planning", "verification", "recovery"],
+      "aliases": ["working methods"],
+      "member_key_prefixes": ["workflow.", "lesson.workflow."],
+      "member_keys": [],
+      "related_cell_ids": ["grid-governance", "grid-data-quality"]
+    },
+    {
+      "id": "grid-data-quality",
+      "title": "Data quality",
+      "keywords": ["evidence", "fresh data", "validation", "conflict"],
+      "aliases": ["fact checking"],
+      "member_key_prefixes": ["lesson.data.", "evidence."],
+      "member_keys": [],
+      "related_cell_ids": ["grid-workflow", "grid-projects"]
+    },
+    {
+      "id": "grid-projects",
+      "title": "Registered projects",
+      "keywords": ["project", "decision", "state", "evidence"],
+      "aliases": ["project directory"],
+      "member_keys": [],
+      "related_cell_ids": ["grid-governance", "grid-data-quality"]
+    }
+  ]
+}
