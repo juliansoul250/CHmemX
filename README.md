@@ -1,84 +1,249 @@
-# Shared Agent Memory Graph
+# CHmemX
 
-A local-first, Git-backed memory system for multiple AI tools with centralized curation.
+[![Tests](https://github.com/juliansoul250/CHmemX/actions/workflows/test.yml/badge.svg)](https://github.com/juliansoul250/CHmemX/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
 
-Different agents may read the same accepted memory graph and upload their own pending packages.
-Source agents cannot promote uploads directly. A curator validates provenance, removes exact
-duplicates, blocks conflicts, organizes content into topic/project grids, requests owner approval,
-and commits permanent memory atomically to Git.
+**A local-first, Git-backed shared memory graph for multiple AI agents.**
 
-## Core model
+CHmemX gives Claude Code, Codex, OpenCode, Pi, ZCode, or another tool separate upload entrances
+while keeping one curated, content-first memory project for everyone to read.
+
+Source agents can query accepted memory and upload their own pending packages. They cannot promote
+uploads directly. A central curator validates provenance, removes exact duplicates, compares
+incoming content with current Active memory, prepares conflict diffs, assigns content/project grid
+nodes, requests owner approval, and commits permanent memory atomically to Git.
+
+> CHmemX is designed to prevent normal workflow mistakes and memory conflicts. It is not an OS
+> security boundary against a malicious process running as the same user.
+
+## Why CHmemX?
+
+Agent-specific memory folders become silos. Switching tools often means losing previous decisions,
+repeating research, or applying contradictory summaries. Letting every tool write directly into one
+store creates the opposite problem: unreviewed, duplicated, conflicting memory.
+
+CHmemX separates the responsibilities:
+
+- **Source agents** read shared Active memory and upload source-owned pending packages.
+- **The curator** validates, deduplicates, compares, organizes, and recommends.
+- **The owner** decides conflicts and confirms exact batches.
+- **Git** preserves the permanent record, approvals, supersession chain, and rollback history.
+- **The vector pointer** routes natural-language topics into content grids and linked Active nodes.
+
+## Architecture
 
 ```text
-tool-specific upload inboxes
-          ↓
-PENDING_CURATION
-          ↓
-central curator
-validate · deduplicate · compare Active · route into content grids
-          ↓
-owner conflict decision and exact batch confirmation
-          ↓
-Git-backed Active Memory
-          ↓
-content-grid vector pointer
-          ↓
-all participating tools
+tool-specific upload entrances
+            ↓
+      PENDING_CURATION
+            ↓
+       central curator
+ provenance · secret scan · dedupe · Active comparison · routing
+            ↓
+    conflict diff + owner decision
+            ↓
+ exact batch confirmation + atomic Git commit
+            ↓
+      permanent Active Memory
+            ↓
+ content grid → vector pointer → all participating tools
 ```
 
-## Properties
+Open the [interactive source-bound architecture map](docs/architecture.html).
 
-- One canonical Active value per scope/class/key identity.
-- Global preferences and project memory remain explicitly scoped.
-- Uploads, candidates, quarantine, rejected data, and unresolved conflicts are never recalled.
-- Exact owner confirmation binds the sealed batch ID, digest, candidate list, and Git HEAD.
-- Future writes are committed by one curator identity; source-tool identity remains audit metadata.
-- Offline sparse vector routing supports English and Chinese without a model download.
-- Git history is preserved through supersede and revert instead of history rewriting.
-- No runtime dependency outside Python's standard library and Git.
+## Key properties
+
+- One current Active value per `(project, scope, class, canonical key)` identity.
+- Global preferences and registered project memory remain explicitly labeled.
+- Tool identity is upload provenance, not read ownership.
+- Uploads, candidates, quarantine, rejected content, and unresolved conflicts are never recalled.
+- Exact owner confirmation binds batch ID, digest, candidate order, bodies, sources, and Git HEAD.
+- Supersede and Git revert preserve history; records are not silently overwritten.
+- The derived vector index contains no record bodies and fails closed when its Git HEAD is stale.
+- English and Chinese routing work offline without downloading an embedding model.
+- Runtime code uses only Python's standard library and Git.
+
+## Workflow
+
+### 1. Read shared memory
+
+Every task starts with scoped lookup:
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/runtime/simple_memory.py" \
+  --cwd "$PWD" start --role main --query '3 to 8 task keywords'
+```
+
+Then query the content-first graph:
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" recall \
+  --index "$MEMORY_GRAPH_KIT/vector-index.json" \
+  --cwd "$PWD" \
+  --query 'the current topic in natural language'
+```
+
+Only `authority=accepted` and `status=active` records may influence work. Project source and official
+documentation still outrank memory.
+
+### 2. Upload source-owned pending memory
+
+At task end, a source agent writes one `memorygraph-agent-export-v1` JSON package using the schema
+and example:
+
+```text
+inbox/<agent-id>/<export-id>.json
+```
+
+The source agent reports the path, item count, rejected count, and SHA-256, then stops. It does not
+assemble, curate, import, review, approve, supersede, revert, or write directly to the memory Git
+repository.
+
+### 3. Route and curate uploads
+
+The curator can inspect routing suggestions without changing the store:
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" route-upload \
+  --index "$MEMORY_GRAPH_KIT/vector-index.json" \
+  --export "inbox/<agent-id>/<export-id>.json"
+```
+
+Then combine uploads belonging to one scope and at most one project root:
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/curate_uploads.py" \
+  --export "inbox/agent-a/export-a.json" \
+  --export "inbox/agent-b/export-b.json" \
+  --curator-agent-id main-memory-curator \
+  --curation-id curation-example \
+  --output "outbox/curation-example.inventory.json" \
+  --report "outbox/curation-example.report.json"
+```
+
+The report:
+
+- preserves source Agent IDs and export IDs;
+- collapses exact duplicates;
+- blocks same-identity disagreements;
+- compares incoming candidates with current Active memory;
+- includes current/incoming bodies, sources, field differences, and unified body diff for conflicts;
+- marks semantic overlap for manual review;
+- never modifies the canonical store.
+
+### 4. Resolve conflicts
+
+The curator gives the owner four explicit options:
+
+- keep current Active;
+- supersede with incoming;
+- rewrite one merged candidate;
+- keep separate keys and connect their routing nodes.
+
+Conflict resolution authorizes preparation only. Final memory still requires a separately reviewed
+batch and exact batch confirmation.
+
+### 5. Import, review, and commit
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/runtime/simple_memory.py" \
+  --cwd "$PWD" import-pending \
+  --inventory "outbox/curation-example.inventory.json" \
+  --agent-id main-memory-curator --confirmed
+
+python3 "$MEMORY_GRAPH_KIT/runtime/simple_memory.py" \
+  --cwd "$PWD" batch-review --batch-id '<batch-id>'
+```
+
+The owner replies exactly:
+
+```text
+确认记忆批次 <batch-id> <exact-digest>
+```
+
+Only then may the curator run `approve`. A successful approval creates one atomic Git commit.
+
+### 6. Rebuild the vector index
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
+  --store "$MEMORY_GRAPH_HOME" \
+  --taxonomy "$MEMORY_GRAPH_KIT/examples/content-directory.example.json" \
+  --output "$MEMORY_GRAPH_KIT/vector-index.json" --replace
+```
 
 ## Quick start
 
+Requirements:
+
+- Python 3.10+
+- Git
+
 ```bash
-git clone <repository-url>
-cd shared-agent-memory-graph
+git clone https://github.com/juliansoul250/CHmemX.git
+cd CHmemX
 
 export MEMORY_GRAPH_KIT="$PWD"
 export MEMORY_GRAPH_HOME="$HOME/.memory-graph/store"
 
 python3 runtime/simple_memory.py init \
-  --project-root /path/to/first/project \
+  --project-root /path/to/first/git/project \
   --project-id project-example \
   --title "Example Project" \
   --confirmed
 ```
 
-Read [docs/quickstart.md](docs/quickstart.md) before using writes. The initialization command is a
-local mutation and should only run after the owner chooses the store and first registered project.
+Initialization is a local mutation. Choose the store path and first registered project before
+running it. The source project is not modified.
+
+## Content-grid vector pointer
+
+The default vectorizer is deterministic and offline:
+
+- NFKC normalization and case folding;
+- word tokens plus Chinese 2/3-character fragments;
+- SHA-256 feature hashing into a sparse vector;
+- cosine similarity for content cells and routing nodes;
+- one-hop graph expansion;
+- dynamic score thresholding.
+
+This is a lexical sparse vector, **not a neural semantic embedding**. A dense embedding backend can
+be added later without changing the curation and approval model.
 
 ## Repository layout
 
 ```text
-runtime/simple_memory.py          canonical Git memory interface
-scripts/assemble_inventory.py     validate one source upload
-scripts/curate_uploads.py         deduplicate and compare uploads with Active
-scripts/vector_memory.py          build/query the content-grid vector pointer
+runtime/simple_memory.py           canonical Git memory interface
+scripts/assemble_inventory.py      validate one source upload
+scripts/curate_uploads.py          dedupe and compare with Active
+scripts/vector_memory.py           build/query/route the vector pointer
 schemas/agent-export-v1.schema.json
-skills/memory-graph/SKILL.md      portable shared skill
-examples/                         safe templates
-docs/                             architecture, curation, security, adapters
-tests/                            acceptance tests
+skills/memory-graph/SKILL.md       portable shared Skill
+examples/                          synthetic upload and content-grid templates
+docs/                              architecture, quick start, curation, security, adapters
+tests/                             acceptance tests with synthetic data
 ```
 
-Open the [interactive architecture map](docs/architecture.html). It is source-bound to the first
-public code commit and passed all 9 showcase checks plus four desktop containment checks in light
-and dark themes.
+## Documentation
 
-## Security boundary
+- [Quick start](docs/quickstart.md)
+- [Architecture](docs/architecture.md)
+- [Centralized curation](docs/curation.md)
+- [Security and privacy](docs/security.md)
+- [Tool adapters](docs/tool-adapters.md)
+- [Interactive architecture](docs/architecture.html)
 
-This prevents normal workflow mistakes; it is not an OS security boundary against a malicious
-process running as the same user. Do not store credentials or private chat logs. See
-[docs/security.md](docs/security.md).
+## Security and privacy
+
+Never store credentials, cookies, tokens, private keys, complete chat logs, hidden runtime state, or
+personal data in uploads or memory. Keep each source tool's private directory isolated. The curator
+reads shared uploads and the canonical memory store, not private source storage.
+
+Agent IDs are workflow attribution, not authenticated identities. A malicious same-user process can
+impersonate an Agent ID. Use OS-level isolation separately if that threat is in scope.
+
+See [SECURITY.md](SECURITY.md) and [docs/security.md](docs/security.md).
 
 ## Tests
 
@@ -89,6 +254,22 @@ python3 tests/test_vector_memory.py
 PYTHONPATH=runtime python3 tests/simple_memory_test.py
 ```
 
+The test suite covers provenance validation, secret quarantine, candidate isolation, exact owner
+confirmation, atomic commits, supersession, project isolation, centralized conflict review, stale
+vector indexes, and cross-project vector routing.
+
+## Non-goals
+
+- cloud-hosted memory service;
+- encrypted secret vault;
+- autonomous conflict resolution;
+- authenticated multi-user authorization;
+- replacement for project source, documentation, or databases.
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md). New tests must use synthetic data only.
+
 ## License
 
-MIT
+[MIT](LICENSE)

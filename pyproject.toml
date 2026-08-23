@@ -1,7 +1,7 @@
 [project]
-name = "shared-agent-memory-graph"
+name = "chmemx"
 version = "0.1.0"
-description = "Local-first Git memory graph with centralized multi-agent curation"
+description = "Local-first shared AI memory graph with centralized curation and vector routing"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 

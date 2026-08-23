@@ -2,11 +2,11 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Shared Agent Memory Graph",
+    "title": "CHmemX Architecture",
     "output": "architecture.html",
     "quality_profile": "showcase",
     "repository": {
-      "url": "https://github.com/juliansoul250/shared-agent-memory-graph",
+      "url": "https://github.com/juliansoul250/CHmemX",
       "revision": "381539504091154c824db06ccfe67c4c757bb045"
     },
     "viewBox": [1200, 650]
