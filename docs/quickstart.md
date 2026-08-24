@@ -16,7 +16,7 @@ Initialization creates a separate Git store and never edits the source project.
 
 ## Read
 
-Run `start` at each task start. Build the vector index after initialization or an approved commit:
+Run `start` at each task start. Build the first vector index after initialization:
 
 ```bash
 python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
@@ -26,6 +26,20 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
 ```
 
 Use `vector_memory.py recall` for content-grid routing across registered subprojects.
+
+After the first index exists, maintain a redacted golden-query suite and use `optimize` after every
+approved commit. The command recalculates corpus IDF, evaluates bounded scoring profiles, and refuses
+to replace the published index when generated coverage or the golden suite regresses:
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
+  --store "$MEMORY_GRAPH_HOME" \
+  --taxonomy /path/to/content-directory.json \
+  --suite /path/to/recall-evaluation.json \
+  --output "$HOME/.memory-graph/vector-index.json" \
+  --report "$HOME/.memory-graph/recall-quality-report.json" \
+  --replace
+```
 
 ## Upload
 

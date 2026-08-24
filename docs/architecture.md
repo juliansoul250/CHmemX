@@ -17,4 +17,12 @@ Retrieval uses two levels:
 2. score and expand member routing nodes, then load linked accepted Active records.
 
 The default vectorizer uses deterministic SHA-256 hashing over normalized word tokens and Chinese
-2/3-character fragments. It is lexical, offline, and dependency-free; it is not a neural embedding.
+2/3-character fragments. Every rebuild derives IDF weights from the complete accepted Active corpus
+and creates separate sparse vectors for content cells, routing nodes, and records. Recall combines
+direct record similarity, node similarity, cell routing, exact curated phrases, project context, and
+one-hop relations. It remains lexical, offline, and dependency-free; it is not a neural embedding.
+
+Index publication is a separate quality gate. Generated cases check every Active record and routing
+node. A curator-owned, redacted golden suite measures Top-1, Hit@3, MRR, Precision@K, forbidden hits,
+and project-scope violations. A bounded optimizer compares deterministic scoring profiles and
+publishes only a passing profile.

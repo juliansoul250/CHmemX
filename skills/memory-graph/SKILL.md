@@ -33,8 +33,11 @@ The explicit curator validates uploads, compares current Active, collapses exact
 blocks conflicts, selects content grids, and prepares a curator-owned Pending inventory. Conflicts
 require current/incoming bodies, sources, field differences, a recommendation, and owner choice.
 
-The curator imports Pending, shows full batch review, waits for exact owner confirmation, commits
-atomically, rebuilds the vector index, and verifies recall.
+The curator imports Pending, shows full batch review, waits for exact owner confirmation, and commits
+atomically. After every accepted commit, update the redacted golden-query suite for new durable
+topics or confirmed misses, then run `vector_memory.py optimize`. The generated Active coverage and
+golden evaluation must both pass before the new index replaces the previous one. Finish by verifying
+recall. Never collect raw private task queries as training data.
 
 ## Scope and privacy
 

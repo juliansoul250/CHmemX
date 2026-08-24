@@ -19,3 +19,7 @@ For each curation run:
 
 Never select the newest timestamp as truth. Project authority and explicit owner decisions outrank
 memory summaries. Conflict resolution and final batch confirmation are separate approvals.
+
+After each accepted commit, update the redacted golden-query suite when a new durable topic or known
+miss appears, then run `vector_memory.py optimize`. Never tune against raw private conversations or
+publish an index whose generated coverage or golden evaluation fails.

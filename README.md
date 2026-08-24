@@ -190,13 +190,32 @@ The default vectorizer is deterministic and offline:
 
 - NFKC normalization and case folding;
 - word tokens plus Chinese 2/3-character fragments;
-- SHA-256 feature hashing into a sparse vector;
+- SHA-256 feature hashing into sparse vectors;
+- corpus-adaptive IDF weights recalculated from every accepted Active record;
+- independent record vectors so memories sharing one routing node can still be distinguished;
 - cosine similarity for content cells and routing nodes;
 - one-hop graph expansion;
-- dynamic score thresholding.
+- bounded scoring-profile optimization and dynamic score thresholding.
 
 This is a lexical sparse vector, **not a neural semantic embedding**. A dense embedding backend can
 be added later without changing the curation and approval model.
+
+Recall quality is versioned and testable. Maintain a redacted golden-query suite based on durable
+memory topics, then publish an index through the quality gate:
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
+  --store "$MEMORY_GRAPH_HOME" \
+  --taxonomy /path/to/content-directory.json \
+  --suite /path/to/recall-evaluation.json \
+  --output /path/to/vector-index.json \
+  --report /path/to/recall-quality-report.json \
+  --replace
+```
+
+The optimizer tries a small deterministic set of scoring profiles and publishes only a profile that
+passes the suite plus generated Active-memory coverage. It does not collect real user queries.
+Start from [`examples/recall-evaluation.example.json`](examples/recall-evaluation.example.json).
 
 ## Repository layout
 
@@ -206,6 +225,7 @@ scripts/assemble_inventory.py      validate one source upload
 scripts/curate_uploads.py          dedupe and compare with Active
 scripts/vector_memory.py           build/query/route the vector pointer
 schemas/agent-export-v1.schema.json
+schemas/recall-evaluation-v1.schema.json
 skills/memory-graph/SKILL.md       portable shared Skill
 examples/                          synthetic upload and content-grid templates
 docs/                              architecture, quick start, curation, security, adapters

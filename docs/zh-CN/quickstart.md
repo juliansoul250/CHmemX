@@ -82,6 +82,20 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" recall \
 
 只读取 `accepted + active` 记录。索引绑定的 Memory Graph Git HEAD 一旦过期，向量召回会拒绝继续，必须由策展者在审批提交后重建。
 
+首次索引完成后，后续每次 Active 提交都应改用质量门禁发布：
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
+  --store "$MEMORY_GRAPH_HOME" \
+  --taxonomy /path/to/content-directory.json \
+  --suite /path/to/recall-evaluation.json \
+  --output "$HOME/.memory-graph/vector-index.json" \
+  --report "$HOME/.memory-graph/recall-quality-report.json" \
+  --replace
+```
+
+优化器根据全部 Active 记忆重算 IDF 和记录向量，并比较受限评分参数。自动覆盖测试或黄金查询未达到阈值时，不会替换正式索引。黄金查询必须脱敏，不记录真实任务全文。
+
 ## 5. 来源 Agent 上传
 
 来源 Agent 使用 [`agent-export-v1.schema.json`](../../schemas/agent-export-v1.schema.json) 和[虚构示例](../../examples/global-preferences.export.json)生成：

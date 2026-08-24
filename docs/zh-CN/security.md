@@ -22,6 +22,8 @@ Pending、Quarantine、Rejected、Superseded 和未解决冲突不会进入召�
 
 向量索引不保存记忆正文，并绑定一个确定的 Memory Graph Git HEAD。HEAD 变化后，旧索引拒绝继续返回内容。
 
+记录级稀疏向量虽然不保存正文，但攻击者仍可能通过词典探测猜测某个词是否出现。因此，除非真实记忆本身允许公开，否则向量索引也必须保持本地。黄金查询集必须脱敏，不能演变成真实用户任务日志。
+
 ## 写入保护
 
 永久写入需要完整批次审阅和精确 Owner 确认。Runtime 还会检查父 Git HEAD、Digest、来源、Canonical Identity 和提交 Agent。

@@ -11,7 +11,19 @@ import unittest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from vector_memory import VectorError, build_index, ranked, route_upload  # noqa: E402
+from vector_memory import (  # noqa: E402
+    EVALUATION_TYPE,
+    LEGACY_INDEX_TYPE,
+    VectorError,
+    build_index,
+    corpus_feature_weights,
+    evaluate_index,
+    load_evaluation_suite,
+    optimize_scoring,
+    ranked,
+    route_upload,
+    token_bucket,
+)
 
 
 class VectorMemoryAcceptance(unittest.TestCase):
@@ -205,6 +217,196 @@ class VectorMemoryAcceptance(unittest.TestCase):
         result = route_upload(self.index, upload)
         self.assertEqual("CONFLICT_REVIEW_REQUIRED", result["routes"][0]["recommendation"])
         self.assertFalse(result["routes"][0]["automatic_write_allowed"])
+
+    def test_index_uses_corpus_idf_and_never_copies_record_body(self) -> None:
+        self.assertEqual("memorygraph-vector-pointer-v2", self.index["type"])
+        self.assertTrue(self.index["vectorizer"]["corpus_adaptive"])
+        self.assertTrue(self.index["vectorizer"]["feature_weights"])
+        self.assertTrue(all(record["vector"] for record in self.index["records"]))
+        self.assertNotIn("遇到429限额后记录断点并恢复工作", json.dumps(self.index, ensure_ascii=False))
+        self.assertTrue(self.index["quality"]["generated_coverage"]["passed"])
+        example = load_evaluation_suite(ROOT / "examples" / "recall-evaluation.example.json")
+        self.assertEqual(EVALUATION_TYPE, example["type"])
+
+    def test_empty_initialized_store_builds_a_valid_zero_case_index(self) -> None:
+        empty = self.root / "empty-store"
+        empty.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=empty, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=empty, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.invalid"], cwd=empty, check=True
+        )
+        (empty / "catalog.json").write_text(json.dumps({"projects": {}}), encoding="utf-8")
+        (empty / "global").mkdir()
+        (empty / "global" / "active-index.json").write_text(
+            json.dumps({"entries": {}}), encoding="utf-8"
+        )
+        taxonomy = self.root / "empty-taxonomy.json"
+        taxonomy.write_text(
+            json.dumps(
+                {
+                    "cells": [
+                        {
+                            "id": "grid-empty",
+                            "title": "Empty",
+                            "keywords": ["empty"],
+                            "aliases": [],
+                            "member_keys": [],
+                            "related_cell_ids": [],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "add", "."], cwd=empty, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "empty"], cwd=empty, check=True)
+        index = build_index(empty, taxonomy, 512)
+        self.assertEqual([], index["records"])
+        self.assertEqual(0, index["quality"]["generated_coverage"]["case_count"])
+        self.assertTrue(index["quality"]["generated_coverage"]["passed"])
+
+    def test_idf_downweights_features_repeated_across_memory_documents(self) -> None:
+        dimensions = 512
+        values = dict(
+            corpus_feature_weights(
+                [
+                    [("common unique", 1.0)],
+                    [("common", 1.0)],
+                    [("common", 1.0)],
+                ],
+                dimensions,
+            )
+        )
+        self.assertGreater(
+            values[float(token_bucket("unique", dimensions))],
+            values[float(token_bucket("common", dimensions))],
+        )
+
+    def test_record_vector_disambiguates_memories_that_share_one_node(self) -> None:
+        second = self.store / "global" / "active" / "memory-docs.json"
+        self.write_record(
+            second,
+            record_id="memory-docs",
+            key="workflow.quota.documentation",
+            body="生成双语发布说明和文档验收清单",
+            project_id=None,
+            node_id="node-quota",
+            title="限额中断恢复",
+            keywords=["限额", "429", "断点续作"],
+        )
+        active_index = json.loads((self.store / "global" / "active-index.json").read_text())
+        active_index["entries"]["preference:workflow.quota.documentation"] = "memory-docs"
+        (self.store / "global" / "active-index.json").write_text(
+            json.dumps(active_index, ensure_ascii=False), encoding="utf-8"
+        )
+        taxonomy = json.loads(self.taxonomy.read_text())
+        taxonomy["cells"][0]["member_keys"].append("workflow.quota.documentation")
+        self.taxonomy.write_text(json.dumps(taxonomy, ensure_ascii=False), encoding="utf-8")
+        subprocess.run(["git", "add", "."], cwd=self.store, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "second memory"], cwd=self.store, check=True)
+        index = build_index(self.store, self.taxonomy, 512)
+        result = ranked(index, "双语发布说明和文档验收清单", 3, self.root)
+        self.assertEqual("memory-docs", result["entries"][0]["id"])
+
+    def test_golden_evaluation_and_profile_optimization_are_deterministic(self) -> None:
+        suite = {
+            "schema_version": 1,
+            "type": EVALUATION_TYPE,
+            "suite_id": "synthetic-quality",
+            "thresholds": {
+                "min_top1": 1.0,
+                "min_hit_at_3": 1.0,
+                "min_mrr": 1.0,
+                "min_precision_at_k": 0.25,
+                "max_forbidden_hits": 0,
+                "max_scope_violations": 0,
+            },
+            "cases": [
+                {
+                    "id": "quota",
+                    "query": "429额度到了以后怎么断点恢复",
+                    "expected_keys": ["workflow.quota.recovery"],
+                    "relevant_keys": ["workflow.quota.recovery"],
+                    "forbidden_keys": ["market.risk_gate"],
+                    "top_k": 4,
+                    "required_rank": 1,
+                },
+                {
+                    "id": "market",
+                    "query": "市场风险门禁",
+                    "project_id": "project-market",
+                    "expected_keys": ["market.risk_gate"],
+                    "relevant_keys": ["market.risk_gate"],
+                    "top_k": 4,
+                    "required_rank": 1,
+                },
+            ],
+        }
+        report = evaluate_index(self.index, suite)
+        self.assertTrue(report["passed"])
+        selected, selected_report, trials = optimize_scoring(self.index, suite)
+        self.assertTrue(selected_report["passed"])
+        self.assertEqual(3, len(trials))
+        self.assertEqual(selected["quality"]["selected_profile"], selected["scoring_profile"]["name"])
+
+    def test_quality_failure_is_reported_and_legacy_index_remains_readable(self) -> None:
+        impossible = {
+            "schema_version": 1,
+            "type": EVALUATION_TYPE,
+            "suite_id": "impossible",
+            "thresholds": {"min_hit_at_3": 1.0},
+            "cases": [
+                {
+                    "id": "missing",
+                    "query": "不存在的记忆",
+                    "expected_keys": ["missing.key"],
+                    "top_k": 3,
+                    "required_rank": 3,
+                }
+            ],
+        }
+        self.assertFalse(evaluate_index(self.index, impossible)["passed"])
+
+        legacy = json.loads(json.dumps(self.index))
+        legacy["type"] = LEGACY_INDEX_TYPE
+        legacy["schema_version"] = 1
+        legacy.pop("scoring_profile", None)
+        legacy["vectorizer"].pop("feature_weights", None)
+        for record in legacy["records"]:
+            record.pop("vector", None)
+        result = ranked(legacy, "429限额断点恢复", 4, self.root)
+        self.assertEqual("memory-global", result["entries"][0]["id"])
+
+        suite_path = self.root / "impossible-suite.json"
+        suite_path.write_text(json.dumps(impossible, ensure_ascii=False), encoding="utf-8")
+        output = self.root / "must-not-exist.json"
+        failure_report = self.root / "quality-failure.json"
+        process = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "vector_memory.py"),
+                "optimize",
+                "--store",
+                str(self.store),
+                "--taxonomy",
+                str(self.taxonomy),
+                "--suite",
+                str(suite_path),
+                "--output",
+                str(output),
+                "--report",
+                str(failure_report),
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(2, process.returncode)
+        self.assertFalse(output.exists())
+        self.assertTrue(failure_report.is_file())
+        self.assertFalse(json.loads(failure_report.read_text())["index_published"])
+        self.assertIn("QUALITY_GATE_FAILED", process.stdout)
 
 
 if __name__ == "__main__":

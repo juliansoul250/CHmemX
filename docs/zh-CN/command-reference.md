@@ -133,7 +133,7 @@ python3 "$MEMORY_GRAPH_KIT/scripts/curate_uploads.py" \
 
 ## 向量索引
 
-构建索引：
+首次构建索引：
 
 ```bash
 python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
@@ -143,6 +143,35 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
 ```
 
 覆盖已有索引时增加 `--replace`。
+
+正式持续更新应使用精度优化与发布门禁：
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
+  --store "$MEMORY_GRAPH_HOME" \
+  --taxonomy /path/to/content-directory.json \
+  --suite /path/to/recall-evaluation.json \
+  --output /path/to/vector-index.json \
+  --report /path/to/recall-quality-report.json \
+  --replace
+```
+
+`optimize` 会根据当前全部 Active 记忆重新计算 IDF 和记录向量，在三套受限评分参数中择优，并运行两层门禁：
+
+1. 根据当前 Active 自动生成的覆盖测试；
+2. 策展者维护的脱敏黄金查询集。
+
+任一门禁失败时退出码为 `2`，不会覆盖正式索引。
+
+只评估现有索引，不发布：
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" evaluate \
+  --index /path/to/vector-index.json \
+  --suite /path/to/recall-evaluation.json
+```
+
+质量通过返回 `0`；未达到阈值返回 `3`。评估报告包含 Top-1、Hit@3、MRR、平均 Precision@K、禁止命中和跨项目违规。
 
 召回：
 

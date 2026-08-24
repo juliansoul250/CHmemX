@@ -182,11 +182,28 @@ python3 runtime/simple_memory.py init \
 - NFKC 规范化与大小写折叠；
 - 英文单词 Token 与中文 2/3 字符片段；
 - SHA-256 特征哈希生成稀疏向量；
+- 根据全部 accepted + Active 记忆重新计算语料自适应 IDF；
+- 为每条记录建立独立向量，避免共享节点导致同分误召回；
 - 使用余弦相似度匹配内容单元与路由节点；
 - 沿图关系扩展一跳；
-- 动态分数阈值。
+- 在有限评分参数中自动择优，并使用动态分数阈值。
 
 它是**词法稀疏向量，不是神经网络语义嵌入**。未来可以增加稠密嵌入后端，而不改变集中策展、冲突处理和 Owner 审批模型。
+
+召回精度必须可测、可回归。策展者维护一套脱敏黄金查询；每次 Active 提交后通过质量门禁发布索引：
+
+```bash
+python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
+  --store "$MEMORY_GRAPH_HOME" \
+  --taxonomy /path/to/content-directory.json \
+  --suite /path/to/recall-evaluation.json \
+  --output /path/to/vector-index.json \
+  --report /path/to/recall-quality-report.json \
+  --replace
+```
+
+优化器只在三套受限、确定性的评分参数中择优。黄金查询和自动生成的 Active 覆盖检查全部通过后才发布；不会收集真实任务查询日志。
+黄金查询格式见 [`examples/recall-evaluation.example.json`](examples/recall-evaluation.example.json)。
 
 ## 仓库结构
 
@@ -196,6 +213,7 @@ scripts/assemble_inventory.py        校验单个来源上传包
 scripts/curate_uploads.py            去重并与当前 Active 对比
 scripts/vector_memory.py             构建、查询和路由向量指向器
 schemas/agent-export-v1.schema.json  来源上传包 Schema
+schemas/recall-evaluation-v1.schema.json  召回质量黄金查询 Schema
 skills/memory-graph/SKILL.md         可移植 Skill
 examples/                            仅包含虚构上传包和内容网格模板
 docs/zh-CN/                          简体中文文档

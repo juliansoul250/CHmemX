@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CHmemX recall quality evaluation suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "type", "suite_id", "thresholds", "cases"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "type": {"const": "memorygraph-recall-evaluation-v1"},
+    "suite_id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{2,95}$"},
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_top1": {"type": "number", "minimum": 0, "maximum": 1},
+        "min_hit_at_3": {"type": "number", "minimum": 0, "maximum": 1},
+        "min_mrr": {"type": "number", "minimum": 0, "maximum": 1},
+        "min_precision_at_k": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_forbidden_hits": {"type": "integer", "minimum": 0},
+        "max_scope_violations": {"type": "integer", "minimum": 0}
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "query", "expected_keys"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{2,95}$"},
+          "query": {"type": "string", "minLength": 1, "maxLength": 1024},
+          "project_id": {
+            "oneOf": [
+              {"type": "string", "pattern": "^[a-z][a-z0-9_-]{2,95}$"},
+              {"type": "null"}
+            ]
+          },
+          "expected_keys": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1, "maxLength": 256}
+          },
+          "relevant_keys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1, "maxLength": 256}
+          },
+          "forbidden_keys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1, "maxLength": 256}
+          },
+          "top_k": {"type": "integer", "minimum": 1, "maximum": 64},
+          "required_rank": {"type": "integer", "minimum": 1, "maximum": 64},
+          "forbid_cross_project": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

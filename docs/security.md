@@ -12,6 +12,9 @@ reads shared uploads and canonical memory, not private source storage.
 
 Pending, quarantine, rejected, and unresolved conflict records are excluded from recall. The
 vector index is derived, contains no bodies, and refuses reads when its Git HEAD is stale.
+Record vectors may still reveal whether a guessed term is present through dictionary probing, so
+keep the index local unless its memory corpus is safe to disclose. Golden-query suites must be
+redacted and must never become logs of private user prompts.
 
 Backups are a separate policy. Do not claim disk-loss protection unless the owner explicitly
 configures and verifies external backup.

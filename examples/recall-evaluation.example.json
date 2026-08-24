@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "type": "memorygraph-recall-evaluation-v1",
+  "suite_id": "example-recall-quality",
+  "thresholds": {
+    "min_top1": 0.8,
+    "min_hit_at_3": 1.0,
+    "min_mrr": 0.9,
+    "min_precision_at_k": 0.25,
+    "max_forbidden_hits": 0,
+    "max_scope_violations": 0
+  },
+  "cases": [
+    {
+      "id": "quota-recovery",
+      "query": "The API quota is exhausted. How do I resume from the saved checkpoint?",
+      "expected_keys": [
+        "workflow.quota.recovery"
+      ],
+      "relevant_keys": [
+        "workflow.quota.recovery"
+      ],
+      "forbidden_keys": [
+        "project.release.status"
+      ],
+      "top_k": 4,
+      "required_rank": 1
+    },
+    {
+      "id": "project-release",
+      "query": "What is the current project release status and its validation evidence?",
+      "project_id": "project-example",
+      "expected_keys": [
+        "project.release.status"
+      ],
+      "relevant_keys": [
+        "project.release.status",
+        "project.release.validation"
+      ],
+      "top_k": 5,
+      "required_rank": 3
+    }
+  ]
+}
