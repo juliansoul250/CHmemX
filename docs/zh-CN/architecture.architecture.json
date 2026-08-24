@@ -7,102 +7,33 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/juliansoul250/CHmemX",
-      "revision": "10f2a4d6f575876ae51c328c50dc1247bbbf33bd"
+      "revision": "d14862b3d3eb0ab3f62f3de614e3be63f1b5fb01"
     },
     "legend": {
       "mode": "auto",
       "entries": {
         "backend": {"label": "处理服务"},
         "database": {"label": "数据存储"},
-        "security": {"label": "安全门禁"},
+        "security": {"label": "质量与安全门禁"},
         "messagebus": {"label": "消息通道"},
         "external": {"label": "外部主体"}
       }
     },
-    "viewBox": [1200, 650]
+    "viewBox": [1380, 690]
   },
   "components": [
-    {
-      "id": "cn-source-agents",
-      "type": "external",
-      "label": "来源工具",
-      "sublabel": "读取 Active，只上传",
-      "pos": [30, 90],
-      "size": [150, 64],
-      "sources": [{"path": "skills/memory-graph/SKILL.md", "line": 24, "label": "来源工具权限"}]
-    },
-    {
-      "id": "cn-pending-uploads",
-      "type": "messagebus",
-      "label": "待整理上传包",
-      "sublabel": "Schema 与来源证据",
-      "pos": [220, 90],
-      "size": [150, 64],
-      "sources": [{"path": "scripts/assemble_inventory.py", "line": 242, "label": "上传包校验"}]
-    },
-    {
-      "id": "cn-central-curator",
-      "type": "backend",
-      "label": "集中策展者",
-      "sublabel": "去重、对比与路由",
-      "pos": [410, 90],
-      "size": [160, 64],
-      "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "集中策展"}]
-    },
-    {
-      "id": "cn-conflict-gate",
-      "type": "security",
-      "label": "冲突门禁",
-      "sublabel": "当前值与新值 Diff",
-      "pos": [610, 90],
-      "size": [160, 64],
-      "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "冲突对比"}]
-    },
-    {
-      "id": "cn-owner-decision",
-      "type": "external",
-      "label": "Owner 决策",
-      "sublabel": "精确确认",
-      "pos": [810, 90],
-      "size": [150, 64],
-      "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "精确确认门禁"}]
-    },
-    {
-      "id": "cn-active-git",
-      "type": "database",
-      "label": "Active Memory Git",
-      "sublabel": "原子提交与完整历史",
-      "pos": [1000, 90],
-      "size": [160, 64],
-      "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "原子审批提交"}]
-    },
-    {
-      "id": "cn-content-grid",
-      "type": "database",
-      "label": "内容网格",
-      "sublabel": "主题单元与项目单元",
-      "pos": [500, 390],
-      "size": [170, 64],
-      "sources": [{"path": "examples/content-directory.example.json", "line": 1, "label": "内容分类模板"}]
-    },
-    {
-      "id": "cn-vector-pointer",
-      "type": "backend",
-      "label": "向量指向器",
-      "sublabel": "网格命中与图关系扩展",
-      "pos": [740, 390],
-      "size": [180, 64],
-      "sources": [{"path": "scripts/vector_memory.py", "line": 305, "label": "向量召回"}]
-    },
-    {
-      "id": "cn-all-tools",
-      "type": "external",
-      "label": "所有接入工具",
-      "sublabel": "读取适用的共享记忆",
-      "pos": [990, 390],
-      "size": [180, 64],
-      "sources": [{"path": "runtime/simple_memory.py", "line": 797, "label": "范围化召回"}]
-    }
+    {"id": "cn-source-agents", "type": "external", "label": "来源工具", "sublabel": "读取 Active，只上传", "pos": [30, 80], "size": [150, 64], "sources": [{"path": "skills/memory-graph/SKILL.md", "line": 24, "label": "来源工具权限"}]},
+    {"id": "cn-pending-uploads", "type": "messagebus", "label": "待整理上传包", "sublabel": "Schema 与来源证据", "pos": [230, 80], "size": [150, 64], "sources": [{"path": "scripts/assemble_inventory.py", "line": 242, "label": "上传包校验"}]},
+    {"id": "cn-central-curator", "type": "backend", "label": "集中策展者", "sublabel": "去重、对比与路由", "pos": [430, 80], "size": [160, 64], "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "集中策展"}]},
+    {"id": "cn-conflict-gate", "type": "security", "label": "冲突门禁", "sublabel": "当前值与新值 Diff", "pos": [640, 80], "size": [160, 64], "sources": [{"path": "docs/zh-CN/curation.md", "line": 1, "label": "冲突政策"}]},
+    {"id": "cn-owner-decision", "type": "external", "label": "Owner 决策", "sublabel": "精确确认", "pos": [850, 80], "size": [150, 64]},
+    {"id": "cn-active-git", "type": "database", "label": "Active Memory Git", "sublabel": "原子提交与完整历史", "pos": [1050, 80], "size": [170, 64], "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "原子审批提交"}]},
+    {"id": "cn-content-grid", "type": "database", "label": "内容网格", "sublabel": "主题单元与项目单元", "pos": [1050, 330], "size": [170, 64], "sources": [{"path": "examples/content-directory.example.json", "line": 1, "label": "内容分类模板"}]},
+    {"id": "cn-adaptive-index", "type": "backend", "label": "自适应索引", "sublabel": "语料 IDF 与记录级向量", "pos": [820, 330], "size": [180, 64], "sources": [{"path": "scripts/vector_memory.py", "line": 153, "label": "语料 IDF"}, {"path": "scripts/vector_memory.py", "line": 363, "label": "索引构建"}]},
+    {"id": "cn-quality-gate", "type": "security", "label": "召回质量门禁", "sublabel": "Top-1、Hit@3、MRR、Precision", "pos": [590, 330], "size": [180, 64], "sources": [{"path": "scripts/vector_memory.py", "line": 716, "label": "质量评估"}, {"path": "scripts/vector_memory.py", "line": 883, "label": "参数择优"}]},
+    {"id": "cn-golden-suite", "type": "external", "label": "脱敏黄金查询", "sublabel": "长期主题与确认误召回", "pos": [590, 510], "size": [180, 64], "sources": [{"path": "schemas/recall-evaluation-v1.schema.json", "line": 1, "label": "查询集契约"}, {"path": "examples/recall-evaluation.example.json", "line": 1, "label": "合成示例"}]},
+    {"id": "cn-vector-pointer", "type": "backend", "label": "向量指向器", "sublabel": "混合评分与图关系扩展", "pos": [360, 330], "size": [180, 64], "sources": [{"path": "scripts/vector_memory.py", "line": 489, "label": "向量召回"}]},
+    {"id": "cn-all-tools", "type": "external", "label": "所有接入工具", "sublabel": "读取适用的共享记忆", "pos": [120, 330], "size": [180, 64], "sources": [{"path": "runtime/simple_memory.py", "line": 797, "label": "范围化召回"}]}
   ],
   "connections": [
     {"id": "cn-upload", "from": "cn-source-agents", "to": "cn-pending-uploads", "variant": "security"},
@@ -110,8 +41,16 @@
     {"id": "cn-review-conflict", "from": "cn-central-curator", "to": "cn-conflict-gate", "variant": "security"},
     {"id": "cn-owner-review", "from": "cn-conflict-gate", "to": "cn-owner-decision", "variant": "security"},
     {"id": "cn-owner-commit", "from": "cn-owner-decision", "to": "cn-active-git", "variant": "security"},
-    {"id": "cn-index", "from": "cn-active-git", "to": "cn-content-grid", "label": "Active 索引", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v"},
-    {"id": "cn-offline-vectors", "from": "cn-content-grid", "to": "cn-vector-pointer", "label": "离线稀疏向量", "variant": "emphasis", "labelAt": [705, 468]},
-    {"id": "cn-active-recall", "from": "cn-vector-pointer", "to": "cn-all-tools", "label": "accepted Active", "variant": "emphasis", "labelAt": [955, 468]}
+    {"id": "cn-index", "from": "cn-active-git", "to": "cn-content-grid", "label": "accepted Active", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v"},
+    {"id": "cn-grid-build", "from": "cn-content-grid", "to": "cn-adaptive-index", "label": "内容分类", "variant": "emphasis"},
+    {"id": "cn-build-quality", "from": "cn-adaptive-index", "to": "cn-quality-gate", "label": "候选索引", "variant": "security"},
+    {"id": "cn-suite-quality", "from": "cn-golden-suite", "to": "cn-quality-gate", "label": "质量案例", "variant": "security", "fromSide": "top", "toSide": "bottom", "route": "orthogonal-v"},
+    {"id": "cn-quality-recall", "from": "cn-quality-gate", "to": "cn-vector-pointer", "label": "通过参数", "variant": "security"},
+    {"id": "cn-active-recall", "from": "cn-vector-pointer", "to": "cn-all-tools", "label": "范围化召回", "variant": "emphasis"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "自适应召回", "items": ["每次根据全部 accepted Active 重算 IDF", "每条记录拥有独立稀疏向量"]},
+    {"dot": "emerald", "title": "质量证据", "items": ["自动覆盖全部 Active 记录和节点", "脱敏黄金查询阻止召回回归"]},
+    {"dot": "rose", "title": "发布规则", "items": ["只比较受限且确定性的评分参数", "质量失败不会覆盖正式索引"]}
   ]
 }

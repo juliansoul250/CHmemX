@@ -7,100 +7,40 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/juliansoul250/CHmemX",
-      "revision": "10f2a4d6f575876ae51c328c50dc1247bbbf33bd"
+      "revision": "d14862b3d3eb0ab3f62f3de614e3be63f1b5fb01"
     },
-    "viewBox": [1200, 650]
+    "viewBox": [1380, 690]
   },
   "components": [
-    {
-      "id": "source-agents",
-      "type": "external",
-      "label": "Source agents",
-      "sublabel": "read Active, upload only",
-      "pos": [30, 90],
-      "size": [150, 64],
-      "sources": [{"path": "skills/memory-graph/SKILL.md", "line": 24, "label": "permissions"}]
-    },
-    {
-      "id": "upload-schema",
-      "type": "messagebus",
-      "label": "Pending uploads",
-      "sublabel": "schema + provenance",
-      "pos": [220, 90],
-      "size": [150, 64],
-      "sources": [{"path": "scripts/assemble_inventory.py", "line": 242, "label": "validation"}]
-    },
-    {
-      "id": "curator",
-      "type": "backend",
-      "label": "Central curator",
-      "sublabel": "dedupe, compare, route",
-      "pos": [410, 90],
-      "size": [160, 64],
-      "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "curation"}]
-    },
-    {
-      "id": "conflict-gate",
-      "type": "security",
-      "label": "Conflict gate",
-      "sublabel": "current vs incoming diff",
-      "pos": [610, 90],
-      "size": [160, 64],
-      "sources": [{"path": "docs/curation.md", "line": 1, "label": "policy"}]
-    },
-    {
-      "id": "owner",
-      "type": "external",
-      "label": "Owner decision",
-      "sublabel": "exact confirmation",
-      "pos": [810, 90],
-      "size": [150, 64]
-    },
-    {
-      "id": "git-store",
-      "type": "database",
-      "label": "Active Memory Git",
-      "sublabel": "atomic commit, full history",
-      "pos": [1000, 90],
-      "size": [160, 64],
-      "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "approve"}]
-    },
-    {
-      "id": "content-grid",
-      "type": "database",
-      "label": "Content grid",
-      "sublabel": "topics and project cells",
-      "pos": [500, 390],
-      "size": [170, 64],
-      "sources": [{"path": "examples/content-directory.example.json", "line": 1, "label": "taxonomy"}]
-    },
-    {
-      "id": "vector-pointer",
-      "type": "backend",
-      "label": "Vector pointer",
-      "sublabel": "cell match and graph expansion",
-      "pos": [740, 390],
-      "size": [180, 64],
-      "sources": [{"path": "scripts/vector_memory.py", "line": 305, "label": "recall"}]
-    },
-    {
-      "id": "all-agents",
-      "type": "external",
-      "label": "All participating tools",
-      "sublabel": "shared applicable memory",
-      "pos": [990, 390],
-      "size": [180, 64],
-      "sources": [{"path": "runtime/simple_memory.py", "line": 797, "label": "scoped recall"}]
-    }
+    {"id": "source-agents", "type": "external", "label": "Source agents", "sublabel": "read Active, upload only", "pos": [30, 80], "size": [150, 64], "sources": [{"path": "skills/memory-graph/SKILL.md", "line": 24, "label": "permissions"}]},
+    {"id": "pending-uploads", "type": "messagebus", "label": "Pending uploads", "sublabel": "schema and provenance", "pos": [230, 80], "size": [150, 64], "sources": [{"path": "scripts/assemble_inventory.py", "line": 242, "label": "validation"}]},
+    {"id": "central-curator", "type": "backend", "label": "Central curator", "sublabel": "dedupe, compare, route", "pos": [430, 80], "size": [160, 64], "sources": [{"path": "scripts/curate_uploads.py", "line": 169, "label": "curation"}]},
+    {"id": "conflict-gate", "type": "security", "label": "Conflict gate", "sublabel": "current vs incoming diff", "pos": [640, 80], "size": [160, 64], "sources": [{"path": "docs/curation.md", "line": 1, "label": "policy"}]},
+    {"id": "owner-decision", "type": "external", "label": "Owner decision", "sublabel": "exact confirmation", "pos": [850, 80], "size": [150, 64]},
+    {"id": "active-git", "type": "database", "label": "Active Memory Git", "sublabel": "atomic commit, full history", "pos": [1050, 80], "size": [170, 64], "sources": [{"path": "runtime/simple_memory.py", "line": 614, "label": "approve"}]},
+    {"id": "content-grid", "type": "database", "label": "Content grid", "sublabel": "topics and project cells", "pos": [1050, 330], "size": [170, 64], "sources": [{"path": "examples/content-directory.example.json", "line": 1, "label": "taxonomy"}]},
+    {"id": "adaptive-index", "type": "backend", "label": "Adaptive index", "sublabel": "corpus IDF and record vectors", "pos": [820, 330], "size": [180, 64], "sources": [{"path": "scripts/vector_memory.py", "line": 153, "label": "corpus IDF"}, {"path": "scripts/vector_memory.py", "line": 363, "label": "index build"}]},
+    {"id": "quality-gate", "type": "security", "label": "Recall quality gate", "sublabel": "Top-1, Hit@3, MRR, Precision", "pos": [590, 330], "size": [180, 64], "sources": [{"path": "scripts/vector_memory.py", "line": 716, "label": "evaluation"}, {"path": "scripts/vector_memory.py", "line": 883, "label": "profile selection"}]},
+    {"id": "golden-suite", "type": "external", "label": "Redacted golden suite", "sublabel": "durable topics and known misses", "pos": [590, 510], "size": [180, 64], "sources": [{"path": "schemas/recall-evaluation-v1.schema.json", "line": 1, "label": "suite contract"}, {"path": "examples/recall-evaluation.example.json", "line": 1, "label": "example"}]},
+    {"id": "vector-pointer", "type": "backend", "label": "Vector pointer", "sublabel": "hybrid score + graph", "pos": [360, 330], "size": [180, 64], "sources": [{"path": "scripts/vector_memory.py", "line": 489, "label": "recall"}]},
+    {"id": "all-agents", "type": "external", "label": "All participating tools", "sublabel": "shared applicable memory", "pos": [120, 330], "size": [180, 64], "sources": [{"path": "runtime/simple_memory.py", "line": 797, "label": "scoped recall"}]}
   ],
   "connections": [
-    {"id": "agents-upload", "from": "source-agents", "to": "upload-schema", "variant": "security"},
-    {"id": "upload-curator", "from": "upload-schema", "to": "curator", "variant": "emphasis"},
-    {"id": "curator-conflict", "from": "curator", "to": "conflict-gate", "variant": "security"},
-    {"id": "conflict-owner", "from": "conflict-gate", "to": "owner", "variant": "security"},
-    {"id": "owner-git", "from": "owner", "to": "git-store", "variant": "security"},
-    {"id": "git-grid", "from": "git-store", "to": "content-grid", "label": "Active index", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v"},
-    {"id": "grid-vector", "from": "content-grid", "to": "vector-pointer", "label": "offline vectors", "variant": "emphasis", "labelAt": [705, 468]},
-    {"id": "vector-agents", "from": "vector-pointer", "to": "all-agents", "label": "accepted Active", "variant": "emphasis", "labelAt": [955, 468]}
+    {"id": "agents-upload", "from": "source-agents", "to": "pending-uploads", "variant": "security"},
+    {"id": "upload-curator", "from": "pending-uploads", "to": "central-curator", "variant": "emphasis"},
+    {"id": "curator-conflict", "from": "central-curator", "to": "conflict-gate", "variant": "security"},
+    {"id": "conflict-owner", "from": "conflict-gate", "to": "owner-decision", "variant": "security"},
+    {"id": "owner-git", "from": "owner-decision", "to": "active-git", "variant": "security"},
+    {"id": "git-grid", "from": "active-git", "to": "content-grid", "label": "accepted Active", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v"},
+    {"id": "grid-index", "from": "content-grid", "to": "adaptive-index", "label": "content taxonomy", "variant": "emphasis", "labelAt": [1025, 408]},
+    {"id": "index-quality", "from": "adaptive-index", "to": "quality-gate", "label": "candidate index", "variant": "security", "labelAt": [795, 408]},
+    {"id": "suite-quality", "from": "golden-suite", "to": "quality-gate", "label": "quality cases", "variant": "security", "fromSide": "top", "toSide": "bottom", "route": "orthogonal-v"},
+    {"id": "quality-pointer", "from": "quality-gate", "to": "vector-pointer", "label": "passing profile", "variant": "security", "labelAt": [565, 408]},
+    {"id": "pointer-agents", "from": "vector-pointer", "to": "all-agents", "label": "scoped recall", "variant": "emphasis", "labelAt": [330, 408]}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Adaptive retrieval", "items": ["IDF is recalculated from every accepted Active memory", "Each record has its own sparse vector"]},
+    {"dot": "emerald", "title": "Quality evidence", "items": ["Generated coverage checks all Active records and nodes", "Redacted golden queries block recall regressions"]},
+    {"dot": "rose", "title": "Publication rule", "items": ["Only deterministic scoring profiles are compared", "A failing report never replaces the published index"]}
   ]
 }

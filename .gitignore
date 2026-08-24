@@ -6,3 +6,6 @@ inbox/
 outbox/
 vector-index.json
 *.local.json
+*.visual-check.*.png
+*.visual-check.html
+*.visual-check.json
