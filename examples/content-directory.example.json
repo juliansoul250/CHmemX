@@ -24,6 +24,14 @@
       "related_cell_ids": ["grid-governance", "grid-data-quality"]
     },
     {
+      "id": "grid-recall-quality",
+      "title": "Recall quality",
+      "keywords": ["vector index", "corpus IDF", "golden queries", "Top-1", "Hit@3", "MRR", "Precision"],
+      "aliases": ["index optimization", "recall regression gate"],
+      "member_keys": ["memory.retrieval.content_grid_vector"],
+      "related_cell_ids": ["grid-governance", "grid-data-quality"]
+    },
+    {
       "id": "grid-data-quality",
       "title": "Data quality",
       "keywords": ["evidence", "fresh data", "validation", "conflict"],
