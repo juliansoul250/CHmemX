@@ -34,6 +34,7 @@ python3 -m venv .venv
 - [MCP 配置与参数](docs/zh-CN/mcp.md)
 - [修改判断、实现边界与测试结果](docs/zh-CN/v0.3.md)
 - [可选本地语义检索](docs/semantic.md)
+- [Backlog 优先级与验收标准](docs/zh-CN/backlog.md)
 
 ## 为什么需要 CHmemX？
 

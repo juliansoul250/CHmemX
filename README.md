@@ -44,6 +44,7 @@ their policy. Nothing enables personal mode on upgrade.
 - [MCP configuration and tool arguments](docs/mcp.md)
 - [v0.3 design decisions, limits, and measured results](docs/v0.3.md)
 - [Optional local semantic retrieval](docs/semantic.md)
+- [Ordered backlog and acceptance gates](BACKLOG.md)
 
 ## Why CHmemX?
 
