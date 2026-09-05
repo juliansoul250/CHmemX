@@ -69,7 +69,10 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id source-one --model-dir /absolute/private/models/minilm serve
 ```
 
-The standard MCP service creates a simple project/global directory. Advanced deployments can build
+The standard MCP service creates a simple project/global directory.
+Switching `--model-dir` takes effect without waiting for a new memory commit. Clients sharing
+the simple service index should use the same model setting to avoid repeated rebuilds.
+Advanced deployments can build
 their reviewed taxonomy with the standalone builder and query that candidate using
 `python -m chmemx.scripts.retrieval_v3 recall --index ... --query ... --cwd ...`.
 Do not silently replace an existing custom taxonomy with the simple service directory.

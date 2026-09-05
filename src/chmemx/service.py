@@ -110,7 +110,11 @@ class Service:
         if not self.index_path.exists():
             self.rebuild()
         index = core.load_json(self.index_path)
-        if index["memory_graph_head"] != head:
+        requested_model = str(self.model_dir.resolve()) if self.model_dir else None
+        if (
+            index["memory_graph_head"] != head
+            or index["hybrid"].get("model_directory") != requested_model
+        ):
             self.rebuild()
             index = core.load_json(self.index_path)
         current = index["index_digest"]

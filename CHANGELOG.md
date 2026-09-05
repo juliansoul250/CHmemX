@@ -6,6 +6,7 @@
   the installed package and hide its runtime subpackage.
 - Move the public API to a conventional `src/chmemx` layout; keep legacy script paths.
 - Retain normal wheel installation in CI so this integration path remains covered.
+- Apply an explicit semantic/lexical backend switch even when memory HEAD has not changed.
 - Do not move or replace the already-published v0.3.0 tag.
 
 ## 0.3.0 — 2026-09-06

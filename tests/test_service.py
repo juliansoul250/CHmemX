@@ -505,10 +505,32 @@ class ServiceAcceptance(unittest.TestCase):
         self.assertEqual("preference.editor.theme", result["entries"][0]["key"])
         self.assertEqual("preference.editor.font", result["associations"][0]["key"])
         self.assertEqual(0, result["associations"][0]["vector_pointer"]["association_hops"])
-        response, _ = dispatch(
-            self.service, {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": [1]}, True
-        )
-        self.assertIn("error", response)
+
+    def test_mcp_rejects_array_parameters(self):
+        for params in ([], [1]):
+            response, _ = dispatch(
+                self.service,
+                {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": params},
+                True,
+            )
+            self.assertIn("error", response)
+
+    def test_backend_switch_is_applied_even_without_a_new_commit(self):
+        self.assertIsNone(self.service._reader().encoder)
+        before = core.git_head(self.service.store)
+
+        class Encoder:
+            def __init__(self, _):
+                self.lock = {"revision": "fixture-model"}
+
+        self.service.model_dir = self.root / "model"
+        with patch.object(v3, "LocalEncoder", Encoder):
+            reader = self.service._reader()
+            self.assertIsNotNone(reader.encoder)
+            self.assertEqual(str(self.service.model_dir.resolve()), reader.index["hybrid"]["model_directory"])
+        self.service.model_dir = None
+        self.assertIsNone(self.service._reader().encoder)
+        self.assertEqual(before, core.git_head(self.service.store))
 
 
 if __name__ == "__main__":
