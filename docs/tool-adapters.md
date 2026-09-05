@@ -1,5 +1,8 @@
 # Tool adapters
 
+v0.3 clients can use the [shared stdio MCP interface](mcp.md) directly. The Skill is an optional
+workflow guide, not a prerequisite for speaking MCP. Each client keeps its own private configuration.
+
 [简体中文](zh-CN/tool-adapters.md)
 
 Every tool should expose the same `memory-graph` Skill behavior:

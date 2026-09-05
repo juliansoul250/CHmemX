@@ -20,16 +20,16 @@ from pathlib import Path
 from typing import Any
 import unicodedata
 
-from assemble_inventory import (
-    ExportError,
-    INVENTORY_TYPE,
-    assemble,
-    atomic_json,
-    canonical_json,
-    load_export,
-    safe_id,
-    sha256_bytes,
-)
+try:
+    from .assemble_inventory import (
+        ExportError, INVENTORY_TYPE, assemble, atomic_json, canonical_json,
+        load_export, safe_id, sha256_bytes,
+    )
+except ImportError:
+    from assemble_inventory import (
+        ExportError, INVENTORY_TYPE, assemble, atomic_json, canonical_json,
+        load_export, safe_id, sha256_bytes,
+    )
 
 
 class CurationError(RuntimeError):

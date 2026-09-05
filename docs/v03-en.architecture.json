@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "components": [
+    {
+      "id": "source-clients",
+      "type": "external",
+      "pos": [
+        45,
+        80
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "label": "Independent clients",
+      "sublabel": "Shared memory; separate identities"
+    },
+    {
+      "id": "stdio-entry",
+      "type": "backend",
+      "pos": [
+        375,
+        80
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "stdio MCP",
+      "sublabel": "start · recall · upload"
+    },
+    {
+      "id": "write-policy",
+      "type": "security",
+      "pos": [
+        715,
+        80
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "Write checks",
+      "sublabel": "Source · secrets · dedupe · risk"
+    },
+    {
+      "id": "pending-review",
+      "type": "external",
+      "pos": [
+        1055,
+        80
+      ],
+      "size": [
+        250,
+        76
+      ],
+      "label": "Pending and Owner review",
+      "sublabel": "Team additions, conflicts, risk"
+    },
+    {
+      "id": "active-history",
+      "type": "database",
+      "pos": [
+        1055,
+        365
+      ],
+      "size": [
+        250,
+        76
+      ],
+      "label": "Active Memory Git",
+      "sublabel": "Atomic commits; history retained"
+    },
+    {
+      "id": "local-index",
+      "type": "backend",
+      "pos": [
+        715,
+        365
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "Local derived index",
+      "sublabel": "Lexical first; optional semantics"
+    },
+    {
+      "id": "verified-reader",
+      "type": "security",
+      "pos": [
+        375,
+        365
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "Verified reader",
+      "sublabel": "Bytes · HEAD · Active membership"
+    },
+    {
+      "id": "shared-return",
+      "type": "external",
+      "pos": [
+        45,
+        365
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "label": "Scoped historical data",
+      "sublabel": "Provenance; one-hop associations"
+    }
+  ],
+  "connections": [
+    {
+      "from": "source-clients",
+      "to": "stdio-entry",
+      "variant": "emphasis"
+    },
+    {
+      "from": "stdio-entry",
+      "to": "write-policy",
+      "variant": "emphasis"
+    },
+    {
+      "from": "write-policy",
+      "to": "pending-review",
+      "variant": "security"
+    },
+    {
+      "from": "pending-review",
+      "to": "active-history",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "write-policy",
+      "to": "active-history",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          830,
+          255
+        ],
+        [
+          1180,
+          255
+        ]
+      ],
+      "labelAt": [
+        1000,
+        230
+      ],
+      "label": "Personal low-risk only"
+    },
+    {
+      "from": "active-history",
+      "to": "local-index",
+      "variant": "emphasis"
+    },
+    {
+      "from": "local-index",
+      "to": "verified-reader",
+      "variant": "security"
+    },
+    {
+      "from": "verified-reader",
+      "to": "shared-return",
+      "variant": "emphasis"
+    }
+  ],
+  "meta": {
+    "title": "CHmemX v0.3 — daily use and review",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1350,
+      610
+    ]
+  },
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Team review stays default",
+      "items": [
+        "Duplicates do not commit; overrides quarantine",
+        "Owner decides conflicts and sensitive changes"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Semantic backend is optional",
+      "items": [
+        "Strong lexical matches keep their rank",
+        "Models, indexes and memory remain local"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust limits stay explicit",
+      "items": [
+        "A signature proves source, not safe content",
+        "Personal mode relaxes policy explicitly"
+      ]
+    }
+  ]
+}

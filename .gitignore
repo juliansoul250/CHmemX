@@ -1,4 +1,10 @@
 __pycache__/
+.venv*/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
 *.py[cod]
 .DS_Store
 .memory-graph/

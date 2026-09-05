@@ -3,8 +3,9 @@
 [简体中文](zh-CN/security.md)
 
 This project provides workflow integrity, provenance checks, atomic writes, and Git rollback. It
-does not authenticate agent identities and cannot stop a malicious same-user process from passing
-another Agent ID.
+does not make unsigned Agent IDs authenticated identities. Optional registered Ed25519 keys bind
+signed bytes to a source key, not to truthful content. Same-user malicious processes remain outside
+the protection boundary. See [current limits and personal-mode tradeoffs](v0.3.md#security-assessment).
 
 Never place secrets, credentials, cookies, tokens, private keys, full chat transcripts, or hidden
 runtime state in uploads or memory. Keep source-agent private directories isolated. The curator

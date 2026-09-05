@@ -11,13 +11,39 @@
 CHmemX gives Claude Code, Codex, OpenCode, Pi, ZCode, or another tool separate upload entrances
 while keeping one curated, content-first memory project for everyone to read.
 
-Source agents can query accepted memory and upload their own pending packages. They cannot promote
+In the default team mode, source agents query accepted memory and upload pending packages. They cannot promote
 uploads directly. A central curator validates provenance, removes exact duplicates, compares
 incoming content with current Active memory, prepares conflict diffs, assigns content/project grid
 nodes, requests owner approval, and commits permanent memory atomically to Git.
 
 > CHmemX is designed to prevent normal workflow mistakes and memory conflicts. It is not an OS
 > security boundary against a malicious process running as the same user.
+
+## Start with v0.3
+
+CHmemX now exposes three stdio MCP tools: `start`, `recall`, and `upload`.
+No server port, database service, API key, or embedding download is required for the default setup.
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.3.0'
+.venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
+  --agent-id codex-main init --project-id project-demo
+```
+
+Use an existing Git project and a new, separate memory directory. Add the
+[stdio client configuration](docs/mcp.md), then call `start` at task start and `upload` at task end.
+The index is rebuilt lazily after approved commits; source agents do not manage index files.
+
+Working alone? Add `--mode personal` to `init`. Only configured sources can auto-save low-risk
+new `preference.*` / `fact.*` records; exact duplicates create no new commit. Conflicts, sensitive
+content, and a deterministic 10% sample still require review. This is an explicit relaxation of
+the write policy, not the same security guarantee with fewer clicks. Existing stores keep
+their policy. Nothing enables personal mode on upgrade.
+
+- [MCP configuration and tool arguments](docs/mcp.md)
+- [v0.3 design decisions, limits, and measured results](docs/v0.3.md)
+- [Optional local semantic retrieval](docs/semantic.md)
 
 ## Why CHmemX?
 
@@ -35,9 +61,10 @@ CHmemX separates the responsibilities:
 
 ## Architecture
 
-[![CHmemX architecture](docs/assets/architecture-en.png)](docs/architecture.html)
+[![CHmemX v0.3 architecture](docs/assets/v03-en.png)](docs/v03-en.html)
 
-Click the diagram to open the [interactive source-bound architecture map](docs/architecture.html).
+Open the [v0.3 interactive map](docs/v03-en.html). The [earlier full team pipeline](docs/architecture.html)
+is retained as versioned design history.
 
 ## Key properties
 
@@ -51,7 +78,7 @@ Click the diagram to open the [interactive source-bound architecture map](docs/a
 - English and Chinese routing work offline without downloading an embedding model.
 - Runtime code uses only Python's standard library and Git.
 
-## Workflow
+## Advanced team workflow (existing CLI remains supported)
 
 ### 1. Read shared memory
 
@@ -160,7 +187,7 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
   --output "$MEMORY_GRAPH_KIT/vector-index.json" --replace
 ```
 
-## Quick start
+## Legacy runtime setup
 
 Requirements:
 
@@ -197,8 +224,8 @@ The default vectorizer is deterministic and offline:
 - one-hop graph expansion;
 - bounded scoring-profile optimization and dynamic score thresholding.
 
-This is a lexical sparse vector, **not a neural semantic embedding**. A dense embedding backend can
-be added later without changing the curation and approval model.
+The default is a lexical sparse vector, not a neural semantic embedding. v0.3 adds an
+[optional local ONNX backend](docs/semantic.md) with conservative fusion and separate evaluation.
 
 Recall quality is versioned and testable. Maintain a redacted golden-query suite based on durable
 memory topics, then publish an index through the quality gate:

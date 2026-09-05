@@ -10,11 +10,30 @@
 
 CHmemX 让 Codex、Claude Code、OpenCode、Pi、ZCode 等工具拥有各自的上传入口，同时读取同一个经过整理的内容型记忆项目。
 
-来源 Agent 只做两件事：查询已经生效的记忆，以及把自己产生的长期内容上传为待整理包。它不能直接把内容提升为永久记忆。集中策展者负责来源校验、秘密扫描、去重、Active 对比、冲突 Diff 和内容归类。Owner 精确确认批次后，策展者才把整批内容原子提交到 Git。
+默认团队模式下，来源 Agent 查询已生效记忆，并上传待整理内容。策展者负责来源校验、秘密扫描、去重、冲突比较和归类。Owner 精确确认批次后，整批内容才提交到 Git。
 
 > **重要边界：** GitHub 上的 CHmemX 仓库只包含脱敏后的工具代码、Skill、Schema、文档、测试和虚构示例。你的真实记忆保存在另外指定的本地 `MEMORY_GRAPH_HOME` Git 仓库中，不会因为更新或推送 CHmemX 而自动上传。
 
 > CHmemX 用于减少正常工作流程中的误写、重复和记忆冲突。它不是抵抗同一操作系统用户下恶意进程的安全边界。
+
+## v0.3：先接入，再按需要加功能
+
+现在可以通过 stdio MCP 调用 `start`、`recall`、`upload`。默认不需要端口、数据库服务、API Key 或向量模型。
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.3.0'
+.venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
+  --agent-id codex-main init --project-id project-demo
+```
+
+项目目录必须是现有 Git 根；记忆目录使用新建的独立位置。然后添加 [MCP 客户端配置](docs/zh-CN/mcp.md)。任务开始查记忆，结束上传；批准后的索引重建由入口处理。
+
+个人使用可以在 `init` 后加 `--mode personal`：只允许配置过的来源自动保存低风险 `preference.*` / `fact.*` 新增项，精确重复不再提交。冲突、敏感内容和按摘要确定的 10% 抽样仍需审查。这是主动放宽写入政策，不是“安全边界不变”。升级不会替现有仓库开启它。
+
+- [MCP 配置与参数](docs/zh-CN/mcp.md)
+- [修改判断、实现边界与测试结果](docs/zh-CN/v0.3.md)
+- [可选本地语义检索](docs/semantic.md)
 
 ## 为什么需要 CHmemX？
 
@@ -30,9 +49,10 @@ CHmemX 将职责明确拆开：
 
 ## 架构
 
-[![CHmemX 中文架构图](docs/assets/architecture-zh-CN.png)](docs/zh-CN/architecture.html)
+[![CHmemX v0.3 中文架构图](docs/assets/v03-zh-CN.png)](docs/v03.html)
 
-点击图片可以打开[中文交互式架构图](docs/zh-CN/architecture.html)。文字说明见[架构文档](docs/zh-CN/architecture.md)。
+点击图片打开 [v0.3 中文交互图](docs/v03.html)。[早期完整团队流程图](docs/zh-CN/architecture.html)
+保留作设计历史；当前规则以 [v0.3 说明](docs/zh-CN/v0.3.md)为准。
 
 ## 核心特性
 
@@ -46,7 +66,7 @@ CHmemX 将职责明确拆开：
 - 默认支持中英文离线路由，不下载神经网络嵌入模型。
 - Runtime 仅依赖 Python 标准库和 Git。
 
-## 完整工作流程
+## 高级团队流程（原有 CLI 继续支持）
 
 ### 1. 任务开始：读取共享记忆
 
@@ -150,7 +170,7 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
   --output "$MEMORY_GRAPH_KIT/vector-index.json" --replace
 ```
 
-## 快速开始
+## 旧版运行时初始化
 
 要求：
 
@@ -188,7 +208,8 @@ python3 runtime/simple_memory.py init \
 - 沿图关系扩展一跳；
 - 在有限评分参数中自动择优，并使用动态分数阈值。
 
-它是**词法稀疏向量，不是神经网络语义嵌入**。未来可以增加稠密嵌入后端，而不改变集中策展、冲突处理和 Owner 审批模型。
+默认是词法稀疏向量，不是神经网络嵌入。v0.3 已提供[可选本地 ONNX 语义后端](docs/semantic.md)，
+使用保守融合和独立评测，不自动下载模型或开启。
 
 召回精度必须可测、可回归。策展者维护一套脱敏黄金查询；每次 Active 提交后通过质量门禁发布索引：
 

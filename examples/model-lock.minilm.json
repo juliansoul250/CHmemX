@@ -1,0 +1,12 @@
+{
+  "model_id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+  "license": "Apache-2.0",
+  "pooling": "attention-mask-mean",
+  "dimension": 384,
+  "max_tokens": 128,
+  "files": {
+    "model.onnx": "783fea82d71a58179b830a4dbd2d58447e640609e98eedf9ffa12622d375a672",
+    "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8"
+  }
+}

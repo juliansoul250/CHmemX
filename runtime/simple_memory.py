@@ -13,7 +13,10 @@ from __future__ import annotations
 import argparse
 import copy
 import datetime as dt
-import fcntl
+try:
+    import fcntl
+except ImportError:  # Windows uses a byte-range lock; chmod is not an ACL.
+    fcntl = None
 import hashlib
 import json
 import math
@@ -108,7 +111,8 @@ def atomic_bytes(path: Path, data: bytes, mode: int = 0o600) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix=".memorygraph-", dir=str(path.parent))
     try:
-        os.fchmod(descriptor, mode)
+        if hasattr(os, "fchmod"):
+            os.fchmod(descriptor, mode)
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(data)
             stream.flush()
@@ -137,7 +141,7 @@ def load_json(path: Path) -> dict[str, object]:
 
 def run_git(root: Path, arguments: list[str], *, check: bool = True) -> subprocess.CompletedProcess[bytes]:
     completed = subprocess.run(
-        ["/usr/bin/git", "-C", str(root), *arguments],
+        [shutil.which("git") or "git", "-C", str(root), *arguments],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         timeout=60,
@@ -186,12 +190,26 @@ class StoreLock:
     def __enter__(self) -> "StoreLock":
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.stream = self.path.open("a+")
-        fcntl.flock(self.stream.fileno(), fcntl.LOCK_EX)
+        if fcntl is not None:
+            fcntl.flock(self.stream.fileno(), fcntl.LOCK_EX)
+        else:
+            import msvcrt
+            self.stream.seek(0)
+            if not self.stream.read(1):
+                self.stream.write("0")
+                self.stream.flush()
+            self.stream.seek(0)
+            msvcrt.locking(self.stream.fileno(), msvcrt.LK_LOCK, 1)
         return self
 
     def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
         assert self.stream is not None
-        fcntl.flock(self.stream.fileno(), fcntl.LOCK_UN)
+        if fcntl is not None:
+            fcntl.flock(self.stream.fileno(), fcntl.LOCK_UN)
+        else:
+            import msvcrt
+            self.stream.seek(0)
+            msvcrt.locking(self.stream.fileno(), msvcrt.LK_UNLCK, 1)
         self.stream.close()
 
 
@@ -289,7 +307,7 @@ class SimpleMemory:
                 ).encode(),
                 0o600,
             )
-            subprocess.run(["/usr/bin/git", "init", "-q", str(self.store)], check=True)
+            subprocess.run([shutil.which("git") or "git", "init", "-q", str(self.store)], check=True)
             run_git(self.store, ["config", "user.name", "Memory Graph"])
             run_git(self.store, ["config", "user.email", "memory-graph@invalid"])
             run_git(self.store, ["add", ".gitignore", "README.md", "policy.json", "catalog.json", "global", "projects"])
@@ -508,6 +526,7 @@ class SimpleMemory:
                 "status": "candidate",
                 "reasons": [],
                 "submitted_by_agent": safe_id(raw.get("submitted_by_agent"), "submitting agent"),
+                "source_agent": safe_id(raw.get("source_agent") or raw.get("submitted_by_agent"), "source agent"),
                 "created_at": iso(),
             }
             if candidate["operation"] not in {"promote", "supersede"}:
@@ -620,6 +639,7 @@ class SimpleMemory:
         committing_agent: str,
         backup_root: Path | None = None,
         fault_after_writes: bool = False,
+        automatic_policy_digest: str | None = None,
     ) -> dict[str, object]:
         with StoreLock(self.store):
             ensure_clean(self.store)
@@ -627,7 +647,19 @@ class SimpleMemory:
             if batch.get("status") != "pending" or batch.get("batch_digest") != expected_digest:
                 raise MemoryError("BATCH_CHANGED", "Batch status or expected digest failed.")
             required = f"确认记忆批次 {batch_id} {expected_digest}"
-            if confirmation_text != required:
+            if automatic_policy_digest is not None:
+                try:
+                    from .write_policy import check_automatic, policy_digest
+                except ImportError:
+                    from write_policy import check_automatic, policy_digest
+                policy = load_json(self.store / "policy.json")
+                if policy_digest(policy) != automatic_policy_digest:
+                    raise MemoryError("POLICY_CHANGED", "Personal policy changed before commit.")
+                try:
+                    check_automatic(policy, batch["candidates"], committing_agent)
+                except ValueError as error:
+                    raise MemoryError("OWNER_REVIEW_REQUIRED", str(error)) from error
+            elif confirmation_text != required:
                 raise MemoryError("CONFIRMATION_REQUIRED", "Exact owner confirmation phrase is required.")
             committing_agent = safe_id(committing_agent, "committing agent")
             submitting_agent = safe_id(
@@ -686,6 +718,7 @@ class SimpleMemory:
                     "approval_batch_id": batch_id,
                     "approval_batch_digest": expected_digest,
                     "submitted_by_agent": candidate.get("submitted_by_agent") or submitting_agent,
+                    "source_agent": candidate.get("source_agent") or candidate.get("submitted_by_agent") or submitting_agent,
                     "committed_by_agent": committing_agent,
                     "created_at": iso(),
                 }
@@ -744,6 +777,11 @@ class SimpleMemory:
                     "committed_by_agent": committing_agent,
                     "records": records,
                 }
+                if automatic_policy_digest is not None:
+                    receipt.pop("confirmation_text_hash", None)
+                    receipt["authorization_kind"] = "personal-policy"
+                    receipt["policy_digest"] = automatic_policy_digest
+                    receipt["owner_batch_confirmation"] = False
                 atomic_json(approval_path, receipt, 0o600)
                 relative_paths = [str(path.relative_to(self.store)) for path in dict.fromkeys(touched)]
                 run_git(self.store, ["add", "--", *relative_paths])
@@ -924,9 +962,9 @@ class SimpleMemory:
             run_git(self.store, ["bundle", "create", str(bundle), "--all"])
             with tempfile.TemporaryDirectory(prefix="memorygraph-bundle-verify-") as value:
                 probe = Path(value)
-                subprocess.run(["/usr/bin/git", "init", "-q", str(probe)], check=True)
+                subprocess.run([shutil.which("git") or "git", "init", "-q", str(probe)], check=True)
                 completed = subprocess.run(
-                    ["/usr/bin/git", "-C", str(probe), "bundle", "verify", str(bundle)],
+                    [shutil.which("git") or "git", "-C", str(probe), "bundle", "verify", str(bundle)],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     timeout=60,
@@ -1029,9 +1067,9 @@ class SimpleMemory:
             raise MemoryError("BACKUP_VERIFY_FAILED", "Plain backup SHA256SUMS failed.")
         with tempfile.TemporaryDirectory(prefix="memorygraph-bundle-verify-") as value:
             probe = Path(value)
-            subprocess.run(["/usr/bin/git", "init", "-q", str(probe)], check=True)
+            subprocess.run([shutil.which("git") or "git", "init", "-q", str(probe)], check=True)
             completed = subprocess.run(
-                ["/usr/bin/git", "-C", str(probe), "bundle", "verify", str(bundle)],
+                [shutil.which("git") or "git", "-C", str(probe), "bundle", "verify", str(bundle)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 timeout=60,

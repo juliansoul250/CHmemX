@@ -15,7 +15,7 @@ class DocumentationAcceptance(unittest.TestCase):
     def test_relative_markdown_links_resolve_inside_repository(self) -> None:
         failures: list[str] = []
         for path in sorted(ROOT.rglob("*.md")):
-            if ".git" in path.parts:
+            if any(part in (".git", ".venv", ".venv310", "build") for part in path.parts):
                 continue
             for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 for raw_target in MARKDOWN_LINK.findall(line):

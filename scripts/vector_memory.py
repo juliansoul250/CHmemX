@@ -22,7 +22,10 @@ import tempfile
 from typing import Any, Iterable
 import unicodedata
 
-from assemble_inventory import assemble, load_export
+try:
+    from .assemble_inventory import assemble, load_export
+except ImportError:
+    from assemble_inventory import assemble, load_export
 
 
 LEGACY_INDEX_TYPE = "memorygraph-vector-pointer-v1"
@@ -217,7 +220,8 @@ def atomic_json(path: Path, value: object, replace: bool) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix=".vector-memory-", dir=target.parent)
     try:
-        os.fchmod(descriptor, 0o600)
+        if hasattr(os, "fchmod"):
+            os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             json.dump(value, stream, ensure_ascii=False, indent=2, sort_keys=True)
             stream.write("\n")
@@ -347,6 +351,7 @@ def record_vector_texts(
             " ".join(str(word) for node in linked for word in node.get("aliases") or []),
             6.0,
         ),
+        (" ".join(record.get("hints") or []), 9.0),
     ]
 
 
@@ -373,6 +378,18 @@ def build_index(
     cells = taxonomy.get("cells")
     if not isinstance(cells, list) or not cells:
         raise VectorError("content directory has no cells")
+    hints = taxonomy.get("record_hints") or {}
+    if not isinstance(hints, dict):
+        raise VectorError("record_hints must be an object")
+    if set(hints) - {r["key"] for r in records}:
+        raise VectorError("record_hints references unknown Active keys")
+    for record in records:
+        values = hints.get(record["key"], [])
+        if not isinstance(values, list) or len(values) > 64 or any(
+            not isinstance(v, str) or not v.strip() or len(v) > 256 for v in values
+        ):
+            raise VectorError("record_hints must contain bounded nonempty strings")
+        record["hints"] = list(dict.fromkeys(normalize_text(v) for v in values))
     record_by_id = {str(record["id"]): record for record in records}
     node_by_uid = {str(node["uid"]): node for node in nodes}
 
@@ -599,6 +616,10 @@ def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str
             float(profile["exact_phrase_cap"]),
             phrase_hits * float(profile["exact_phrase_boost"]),
         )
+        hint_hits = sum(1 for phrase in metadata.get("hints") or []
+                        if normalize_text(phrase) in query_text)
+        exact_bonus = min(float(profile["exact_phrase_cap"]),
+                          exact_bonus + hint_hits * float(profile["exact_phrase_boost"])) if not exact_key else exact_bonus
         project_bonus = (
             float(profile["project_boost"])
             if active_project and metadata.get("project_id") == active_project
@@ -714,7 +735,7 @@ def evaluation_cwd(index: dict[str, Any], project_id: str | None) -> Path:
     return Path(str(project["root"]))
 
 
-def evaluate_index(index: dict[str, Any], suite: dict[str, Any]) -> dict[str, Any]:
+def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None) -> dict[str, Any]:
     ensure_fresh(index)
     if suite.get("schema_version") != 1 or suite.get("type") != EVALUATION_TYPE:
         raise VectorError("unsupported recall evaluation suite")
@@ -746,7 +767,7 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any]) -> dict[str, An
         relevant = {str(value) for value in case.get("relevant_keys") or expected}
         forbidden = {str(value) for value in case.get("forbidden_keys") or []}
         project_id = str(case["project_id"]) if case.get("project_id") else None
-        result = ranked(
+        result = (ranker or ranked)(
             index,
             str(case["query"]),
             max(top_k, required_rank, 3),

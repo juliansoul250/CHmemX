@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "components": [
+    {
+      "id": "source-clients",
+      "type": "external",
+      "pos": [
+        45,
+        80
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "label": "各工具的独立入口",
+      "sublabel": "共享记忆；身份不共享"
+    },
+    {
+      "id": "stdio-entry",
+      "type": "backend",
+      "pos": [
+        375,
+        80
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "stdio MCP",
+      "sublabel": "start · recall · upload"
+    },
+    {
+      "id": "write-policy",
+      "type": "security",
+      "pos": [
+        715,
+        80
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "写入检查",
+      "sublabel": "来源 · 秘密 · 重复 · 风险"
+    },
+    {
+      "id": "pending-review",
+      "type": "external",
+      "pos": [
+        1055,
+        80
+      ],
+      "size": [
+        250,
+        76
+      ],
+      "label": "待审与 Owner 裁决",
+      "sublabel": "团队新增、冲突、敏感项"
+    },
+    {
+      "id": "active-history",
+      "type": "database",
+      "pos": [
+        1055,
+        365
+      ],
+      "size": [
+        250,
+        76
+      ],
+      "label": "Active 记忆 Git",
+      "sublabel": "原子提交；历史保留"
+    },
+    {
+      "id": "local-index",
+      "type": "backend",
+      "pos": [
+        715,
+        365
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "本地派生索引",
+      "sublabel": "词法优先；语义后端可选"
+    },
+    {
+      "id": "verified-reader",
+      "type": "security",
+      "pos": [
+        375,
+        365
+      ],
+      "size": [
+        230,
+        76
+      ],
+      "label": "验证后读取",
+      "sublabel": "字节 · HEAD · Active 成员"
+    },
+    {
+      "id": "shared-return",
+      "type": "external",
+      "pos": [
+        45,
+        365
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "label": "带范围的历史数据",
+      "sublabel": "来源标记；关联最多一跳"
+    }
+  ],
+  "connections": [
+    {
+      "from": "source-clients",
+      "to": "stdio-entry",
+      "variant": "emphasis"
+    },
+    {
+      "from": "stdio-entry",
+      "to": "write-policy",
+      "variant": "emphasis"
+    },
+    {
+      "from": "write-policy",
+      "to": "pending-review",
+      "variant": "security"
+    },
+    {
+      "from": "pending-review",
+      "to": "active-history",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "write-policy",
+      "to": "active-history",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "via": [
+        [
+          830,
+          255
+        ],
+        [
+          1180,
+          255
+        ]
+      ],
+      "labelAt": [
+        1000,
+        230
+      ],
+      "label": "仅单人低风险新增"
+    },
+    {
+      "from": "active-history",
+      "to": "local-index",
+      "variant": "emphasis"
+    },
+    {
+      "from": "local-index",
+      "to": "verified-reader",
+      "variant": "security"
+    },
+    {
+      "from": "verified-reader",
+      "to": "shared-return",
+      "variant": "emphasis"
+    }
+  ],
+  "meta": {
+    "title": "CHmemX v0.3 — 日常接入与审查",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1350,
+      610
+    ],
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "参与者"
+        },
+        "backend": {
+          "label": "处理模块"
+        },
+        "security": {
+          "label": "审查与校验"
+        },
+        "database": {
+          "label": "持久记录"
+        }
+      }
+    }
+  },
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "默认保持团队审查",
+      "items": [
+        "重复不提交；可疑覆盖结构进隔离区",
+        "冲突或敏感变更必须由 Owner 决定"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "语义后端按需启用",
+      "items": [
+        "保留强词法匹配，语义只补充拒答",
+        "模型、索引与真实记忆均留本地"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "信任边界不夸大",
+      "items": [
+        "签名只证明来源；记忆不能授权执行",
+        "单人模式是显式放宽，不是同等防护"
+      ]
+    }
+  ]
+}

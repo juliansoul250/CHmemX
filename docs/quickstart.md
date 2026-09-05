@@ -1,5 +1,8 @@
 # Quick start
 
+For v0.3, start with the [MCP quick setup](mcp.md). The manual workflow below
+is retained for existing stores and bulk curators; it is no longer required for daily tool use.
+
 [简体中文](zh-CN/quickstart.md)
 
 ## Environment

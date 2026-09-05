@@ -1,9 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "chmemx"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local-first shared AI memory graph with centralized curation and vector routing"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+
+[project.scripts]
+chmemx = "chmemx.cli:main"
+
+[project.optional-dependencies]
+semantic = ["onnxruntime>=1.23,<2", "numpy>=1.26,<3", "tokenizers>=0.22,<1"]
+signatures = ["cryptography>=41,<50"]
+test = ["mcp>=1.28,<2", "cryptography>=41,<50"]
+
+[tool.setuptools]
+packages = ["chmemx", "chmemx.runtime", "chmemx.scripts"]
+
+[tool.setuptools.package-dir]
+"chmemx" = "chmemx"
+"chmemx.runtime" = "runtime"
+"chmemx.scripts" = "scripts"
 
 [tool.ruff]
 line-length = 100
