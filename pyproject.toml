@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chmemx"
-version = "0.3.0"
+version = "0.3.1"
 description = "Local-first shared AI memory graph with centralized curation and vector routing"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -21,7 +21,7 @@ test = ["mcp>=1.28,<2", "cryptography>=41,<50"]
 packages = ["chmemx", "chmemx.runtime", "chmemx.scripts"]
 
 [tool.setuptools.package-dir]
-"chmemx" = "chmemx"
+"chmemx" = "src/chmemx"
 "chmemx.runtime" = "runtime"
 "chmemx.scripts" = "scripts"
 

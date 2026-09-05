@@ -26,7 +26,7 @@ No server port, database service, API key, or embedding download is required for
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.3.0'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.3.1'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```

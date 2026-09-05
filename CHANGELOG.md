@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 — 2026-09-06
+
+- Fix a non-editable-install failure exposed by Linux CI: the source checkout could shadow
+  the installed package and hide its runtime subpackage.
+- Move the public API to a conventional `src/chmemx` layout; keep legacy script paths.
+- Retain normal wheel installation in CI so this integration path remains covered.
+- Do not move or replace the already-published v0.3.0 tag.
+
 ## 0.3.0 — 2026-09-06
 
 - Add installable package and three-tool stdio MCP interface, independently tested with the official MCP client.
