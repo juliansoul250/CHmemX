@@ -93,11 +93,20 @@ class LifecycleAcceptance(unittest.TestCase):
     def test_same_project_subdirectory_reuses_request(self):
         sub = self.project / "subdir"
         sub.mkdir()
-        first = self.service.upload(**self.preference(), request_id="same-context")
+        (self.project / "authority.md").write_text("Protocol Alpha.", encoding="utf-8")
+        self.commit_project()
+        args = dict(
+            key="contract.subdirectory",
+            value="Protocol Alpha.",
+            source={"path": "authority.md"},
+            scope="project",
+            memory_class="decision",
+        )
+        first = self.service.upload(**args, request_id="same-context")
         other = Service(self.service.store, sub, "source-alpha")
         self.assertEqual(
             first["upload_id"],
-            other.upload(**self.preference(), request_id="same-context")["upload_id"],
+            other.upload(**args, request_id="same-context")["upload_id"],
         )
 
     def test_recorded_legacy_request_is_reused_without_rewriting_id(self):
