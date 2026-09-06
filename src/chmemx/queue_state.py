@@ -6,11 +6,23 @@ No automatic deletion. Statistics use logical uploads, not raw event count.
 from __future__ import annotations
 from contextlib import contextmanager
 import copy
+import json
 from itertools import islice
 import time
 from pathlib import Path
 
 from .runtime import simple_memory as core
+from .runtime import queue_archive
+
+TERMINAL = {
+    "ACTIVE_COMMITTED",
+    "COMMITTED_NOT_ACTIVE",
+    "COMMIT_NOT_CURRENT",
+    "EXACT_DUPLICATE",
+    "REJECTED",
+    "CANCELLED",
+    "UPLOAD_DATA_MISSING",
+}
 
 DEFAULT_LIMITS = {
     "max_uploads": 10000,
@@ -73,6 +85,7 @@ class QueueState:
                     if job.get("batch_id"):
                         data["batches"][job["batch_id"]] = p.stem
             before = core.canonical_json(data)
+            data.setdefault("event_sequence", data["event_files"])
             try:
                 yield data
             finally:
@@ -127,11 +140,14 @@ class QueueState:
             self._stat(d, agent, status, logical_id)
             if raw_event is not None and d["event_files"] < limits["max_events"]:
                 d["event_files"] += 1
+                d["event_sequence"] += 1
                 core.atomic_json(
                     self.path, d, 0o600
                 )  # reserve before writing; crash cannot reuse an audit filename
                 core.atomic_json(
-                    self.root / "events" / f"event-{d['event_files']:012d}.json", raw_event, 0o600
+                    self.root / "events" / f"event-{d['event_sequence']:012d}.json",
+                    raw_event,
+                    0o600,
                 )
             else:
                 d["suppressed_events"] += 1
@@ -146,7 +162,7 @@ class QueueState:
             "recent": s["recent"],
         }
 
-    def reserve(self, upload_id, digest, agent):
+    def reserve(self, upload_id, digest, agent, context=None):
         limits = self.limits()
         with self.locked() as d:
             old = d["uploads"].get(upload_id)
@@ -164,14 +180,23 @@ class QueueState:
                 "status": "UPLOADING",
                 "input_digest": digest,
                 "source_agent": agent,
+                "context": context,
             }
 
     def update(self, job):
+        job = {k: v for k, v in job.items() if not k.startswith("_")}
         core.atomic_json(self.root / "uploads" / f"{job['upload_id']}.json", job, 0o600)
         with self.locked() as d:
             d["uploads"][job["upload_id"]] = {
                 k: job.get(k)
-                for k in ("status", "input_digest", "source_agent", "batch_id", "candidate_id")
+                for k in (
+                    "status",
+                    "input_digest",
+                    "source_agent",
+                    "batch_id",
+                    "candidate_id",
+                    "context",
+                )
             }
             if job.get("batch_id"):
                 d["batches"][job["batch_id"]] = job["upload_id"]
@@ -179,6 +204,88 @@ class QueueState:
     def by_batch(self, batch_id):
         with self.locked() as d:
             return d["batches"].get(batch_id)
+
+    def assert_ready(self):
+        if (self.root / "maintenance/active.json").exists():
+            raise core.MemoryError(
+                "MAINTENANCE_RECOVERY_REQUIRED",
+                "Finish or roll back the interrupted queue transaction.",
+            )
+
+    def exists(self, upload_id):
+        core.safe_id(upload_id, "upload id")
+        return any(
+            (self.root / folder / f"{upload_id}.json").exists()
+            for folder in ("uploads", "receipts")
+        )
+
+    def load_job(self, upload_id):
+        core.safe_id(upload_id, "upload id")
+        path = self.root / "uploads" / f"{upload_id}.json"
+        if path.exists():
+            return self.checked_job(core.load_json(path), upload_id, "hot")
+        receipt = core.load_json(self.root / "receipts" / f"{upload_id}.json")
+        self.checked_job(receipt, upload_id, "receipt")
+        if receipt.get("archive_path"):
+            path = self.root / core.safe_relative(receipt["archive_path"])
+            if path.is_symlink() or any(p.is_symlink() for p in path.parents):
+                raise core.MemoryError("ARCHIVE_PATH_INVALID", "Archive symlink rejected.")
+            raw = path.read_bytes()
+            if core.sha256_bytes(raw) != receipt["archive_hash"]:
+                raise core.MemoryError("ARCHIVE_CHANGED", "Queue archive failed its byte seal.")
+            try:
+                _, files = queue_archive.unpack(raw)
+                job = json.loads(files[f"chmemx/uploads/{upload_id}.json"])
+            except (ValueError, KeyError, OSError) as error:
+                raise core.MemoryError("ARCHIVE_INVALID", "Queue archive is unreadable.") from error
+            return self.checked_job(job, upload_id, "archive")
+        return self.checked_job(receipt, upload_id, "receipt")
+
+    @staticmethod
+    def checked_job(value, upload_id, storage):
+        if (
+            not isinstance(value, dict)
+            or value.get("upload_id") != upload_id
+            or not value.get("source_agent")
+        ):
+            raise core.MemoryError(
+                "UPLOAD_STATE_INVALID", "Stored upload identity does not match its locator."
+            )
+        core.safe_id(value["source_agent"], "source agent")
+        return {**value, "_storage": storage}
+
+    def save_receipt(self, job):
+        fields = (
+            "upload_id",
+            "input_digest",
+            "source_agent",
+            "context",
+            "identity_version",
+            "status",
+            "created_at",
+            "closed_at",
+            "record_id",
+            "commit_created",
+            "record_ids",
+            "batch_id",
+            "batch_digest",
+            "commit",
+            "reason",
+            "archive_path",
+            "archive_hash",
+            "archived_at",
+            "purged_at",
+            "audit_bucket",
+            "legacy_scope",
+            "legacy_project_root",
+        )
+        receipt = {k: job[k] for k in fields if k in job}
+        receipt["type"] = "chmemx-request-receipt-v1"
+        core.atomic_json(self.root / "receipts" / f"{job['upload_id']}.json", receipt, 0o600)
+
+    def persist_if_hot(self, job):
+        if job.get("_storage", "hot") == "hot":
+            self.update(job)
 
     def consume_nonce(self, agent, nonce, expires_at):
         key = core.sha256_bytes(core.canonical_json([agent, nonce]))
@@ -226,6 +333,7 @@ class QueueState:
     def maintain_nonces(self, expected_digest):
         """Operator-only expiry cleanup; never removes Pending or event files."""
         with core.StoreLock(self.root / "locks/operation"), self.locked() as d:
+            self.assert_ready()
             plan = self._maintenance_plan(d)
             if plan["digest"] != expected_digest:
                 raise core.MemoryError(

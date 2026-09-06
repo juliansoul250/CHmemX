@@ -16,13 +16,13 @@ CHmemX 让 Codex、Claude Code、OpenCode、Pi、ZCode 等工具拥有各自的�
 
 > CHmemX 用于减少正常工作流程中的误写、重复和记忆冲突。它不是抵抗同一操作系统用户下恶意进程的安全边界。
 
-## v0.4：先接入，再按需要加功能
+## v0.5：先接入，再按需要加功能
 
 现在可以通过 stdio MCP 调用 `start`、`recall`、`upload`。默认不需要端口、数据库服务、API Key 或向量模型。
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.4.0'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.0'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
@@ -32,7 +32,8 @@ python3 -m venv .venv
 个人使用可以在 `init` 后加 `--mode personal`：只允许配置过的来源自动保存低风险 `preference.*` 偏好新增项，精确重复不再提交。其他事实、冲突、敏感内容和按摘要确定的 10% 抽样仍需审查。这是主动放宽写入政策，不是“安全边界不变”。升级不会替现有仓库开启它。
 
 - [MCP 配置与参数](docs/zh-CN/mcp.md)
-- [v0.4 评审取舍、重试恢复、队列限额与来源时效](docs/zh-CN/v0.4.md)
+- [v0.5 上传流程与升级说明](docs/zh-CN/v0.5.md)
+- [队列维护与中断恢复](docs/zh-CN/maintenance.md)
 - [修改判断、实现边界与测试结果](docs/zh-CN/v0.3.md)
 - [可选本地语义检索](docs/semantic.md)
 - [Backlog 优先级与验收标准](docs/zh-CN/backlog.md)
@@ -54,7 +55,7 @@ CHmemX 将职责明确拆开：
 [![CHmemX v0.3 中文架构图](docs/assets/v03-zh-CN.png)](docs/v03.html)
 
 点击图片打开 [v0.3 中文交互图](docs/v03.html)。[早期完整团队流程图](docs/zh-CN/architecture.html)
-保留作设计历史；当前规则以 [v0.4 说明](docs/zh-CN/v0.4.md)为准。
+保留作设计历史；当前规则以 [v0.5 说明](docs/zh-CN/v0.5.md)为准。
 
 ## 核心特性
 

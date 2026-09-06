@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .service import Service
+from .errors import error_result
 
 
 def main():
@@ -33,7 +34,26 @@ def main():
     sub.add_parser("serve")
     status = sub.add_parser("status")
     status.add_argument("--upload-id")
-    sub.add_parser("maintenance-plan")
+    maintenance = sub.add_parser("maintenance-plan")
+    maintenance.add_argument(
+        "--action",
+        choices=["archive", "purge", "reconcile", "expire-receipts", "nonces"],
+        default="archive",
+    )
+    maintenance.add_argument("--older-than-days", type=int)
+    maintenance.add_argument("--limit", type=int, default=100)
+    maintenance.add_argument("--output", type=Path)
+    maintenance_apply = sub.add_parser("maintenance-apply")
+    maintenance_apply.add_argument("--plan", type=Path, required=True)
+    maintenance_apply.add_argument("--digest", required=True)
+    recovery = sub.add_parser("maintenance-recover")
+    recovery.add_argument("--transaction-id", required=True)
+    recovery.add_argument("--action", choices=["rollback", "complete"], default="rollback")
+    close = sub.add_parser("close-upload")
+    close.add_argument("upload_id")
+    close.add_argument("--decision", choices=["cancel", "reject"], required=True)
+    close.add_argument("--reason", required=True)
+    close.add_argument("--digest", required=True)
     nonce_maintenance = sub.add_parser("maintenance-nonces")
     nonce_maintenance.add_argument("--digest", required=True)
     backup = sub.add_parser("backup")
@@ -83,7 +103,25 @@ def main():
         elif args.command == "status":
             result = service.start(upload_id=args.upload_id)
         elif args.command == "maintenance-plan":
-            result = service.queue.maintenance_plan()
+            result = (
+                service.queue.maintenance_plan()
+                if args.action == "nonces"
+                else service.maintenance_plan(args.action, args.older_than_days, args.limit)
+            )
+            if args.output:
+                from .runtime import simple_memory as core
+
+                if args.output.exists():
+                    raise core.MemoryError("PLAN_OUTPUT_EXISTS", "Do not overwrite another plan.")
+                core.atomic_json(args.output, result, 0o600)
+        elif args.command == "maintenance-apply":
+            from .runtime import simple_memory as core
+
+            result = service.maintenance_apply(core.load_json(args.plan), args.digest)
+        elif args.command == "maintenance-recover":
+            result = service.maintenance_recover(args.transaction_id, args.action)
+        elif args.command == "close-upload":
+            result = service.close_upload(args.upload_id, args.decision, args.reason, args.digest)
         elif args.command == "maintenance-nonces":
             result = service.queue.maintain_nonces(args.digest)
         elif args.command == "backup":
@@ -110,17 +148,7 @@ def main():
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except Exception as error:
-        print(
-            json.dumps(
-                {
-                    "status": "ERROR",
-                    "code": getattr(error, "code", type(error).__name__),
-                    "message": str(error),
-                    "details": getattr(error, "details", {}),
-                },
-                ensure_ascii=False,
-            )
-        )
+        print(json.dumps(error_result(error), ensure_ascii=False))
         return 2
 
 

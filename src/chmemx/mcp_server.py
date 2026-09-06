@@ -11,6 +11,7 @@ import json
 import sys
 
 from . import __version__
+from .errors import error_result
 
 VERSIONS = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"]
 MAX_BYTES = 1024 * 1024
@@ -150,13 +151,7 @@ def dispatch(service, message, initialized):
                     {
                         "type": "text",
                         "text": json.dumps(
-                            {
-                                "status": "ERROR",
-                                "code": getattr(error, "code", type(error).__name__),
-                                "message": str(error),
-                                "details": getattr(error, "details", {}),
-                                "retryable": getattr(error, "details", {}).get("retryable", False),
-                            },
+                            error_result(error),
                             ensure_ascii=False,
                         ),
                     }

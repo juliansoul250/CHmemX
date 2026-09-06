@@ -255,6 +255,13 @@ class StoreLock:
         self.stream.close()
 
 
+APP_GIT_CONFIG = {
+    "user.name": "Memory Graph",
+    "user.email": "memory-graph@invalid",
+    "core.autocrlf": "false",
+}
+
+
 class SimpleMemory:
     def __init__(self, store: Path) -> None:
         self.store = store.expanduser().resolve()
@@ -373,8 +380,8 @@ class SimpleMemory:
             subprocess.run(
                 [shutil.which("git") or "git", "init", "-q", str(self.store)], check=True
             )
-            run_git(self.store, ["config", "user.name", "Memory Graph"])
-            run_git(self.store, ["config", "user.email", "memory-graph@invalid"])
+            for key, value in APP_GIT_CONFIG.items():
+                run_git(self.store, ["config", "--local", key, value])
             run_git(
                 self.store,
                 [
@@ -1256,6 +1263,11 @@ class SimpleMemory:
 
     def backup_state_files(self, extra_pending_roots=None):
         """Explicit durable state coverage; excludes rebuildable indexes and locks."""
+        if (self.queue / "chmemx/maintenance/active.json").exists():
+            raise MemoryError(
+                "MAINTENANCE_RECOVERY_REQUIRED",
+                "Recover the queue transaction before taking a backup.",
+            )
         files = {}
         families = (
             ("candidates", "candidate-*.json"),
@@ -1264,6 +1276,10 @@ class SimpleMemory:
             ("chmemx/uploads", "*.json"),
             ("chmemx/events", "*.json"),
             ("chmemx/nonces", "*.json"),
+            ("chmemx/receipts", "*.json"),
+            ("chmemx/history", "*.gz"),
+            ("chmemx/archives", "**/*.gz"),
+            ("chmemx/maintenance/receipts", "*.json"),
         )
         for folder, pattern in families:
             for path in (self.queue / folder).glob(pattern):
@@ -1385,7 +1401,18 @@ class SimpleMemory:
                 # Copy bytes atomically; queue metadata is represented in the
                 # signed/hash manifest rather than filesystem flags.
                 raw = source.read_bytes()
-                if secret_reasons(json.loads(raw)):
+                if source.suffix == ".gz":
+                    try:
+                        from . import queue_archive
+                    except ImportError:
+                        import queue_archive
+                    _, archived_files = queue_archive.unpack(raw)
+                    unsafe = any(
+                        secret_reasons(json.loads(data)) for data in archived_files.values()
+                    )
+                else:
+                    unsafe = secret_reasons(json.loads(raw))
+                if unsafe:
                     raise MemoryError(
                         "BACKUP_UNSAFE_STATE",
                         "Durable state contains possible secrets; backup refused.",
@@ -1533,6 +1560,11 @@ class SimpleMemory:
                 shutil.which("git") or "git",
                 "clone",
                 "-q",
+                *[
+                    arg
+                    for key, value in APP_GIT_CONFIG.items()
+                    for arg in ("--config", f"{key}={value}")
+                ],
                 str(directory / manifest["bundle"]),
                 str(destination),
             ],

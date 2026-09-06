@@ -87,7 +87,8 @@ v0.4 的 `upload` 可带 `request_id`，`start` 可带 `upload_id` 查询状态�
 重复 review 复用批次；`review 上传ID --refresh` 明确废弃旧审阅，再请求新的精确确认。
 注册过公钥的签名正文须包含提供的 `request_id`；重放原签名仍拒绝。
 `recall` 将过期或不可核对的项目事实单列到 `needs_review`，不可当成当前事实执行。
-见 [v0.4 变更与边界](v0.4.md)。
+v0.5 的请求编号绑定来源 Agent、Scope 和注册项目 ID，全局偏好不绑定项目。无操作重复也记录显式编号；同文证据的来源更新以 `SOURCE_REFRESH` 待审并提供来源差异。
+维护中断会在 `start.queue_health` 中报告，管理命令不通过 MCP 暴露。见[维护指南](maintenance.md)和 [v0.5 说明](v0.5.md)。
 
 新增项目：
 

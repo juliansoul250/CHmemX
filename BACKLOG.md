@@ -2,7 +2,7 @@
 
 [简体中文](docs/zh-CN/backlog.md)
 
-Owner-set order, 2026-09-06:
+Current priorities:
 
 1. MCP server
 2. Tiered confirmation
@@ -14,9 +14,8 @@ This orders the remaining work. Keep the foundations shipped in v0.3.1; do not r
 present a partial implementation as a completed milestone. Close the earliest unfinished
 acceptance work before expanding a later area. Baseline measurements accompany every stage.
 
-v0.4 reliability update: [review decisions and limits](docs/v0.4.md). Stable upload/review retries,
-bounded queue metadata, opt-in backup coverage and derived source freshness are implemented.
-Public-wheel tests do not imply a private team gateway or every desktop client was upgraded.
+See [v0.5](docs/v0.5.md) for scoped request identities, evidence refresh, effective-result selection
+and explicit queue maintenance. Package acceptance does not certify every custom gateway or desktop client.
 
 ## 1. MCP server
 
@@ -43,7 +42,8 @@ inherit personal mode. A policy change requires explicit Owner authorization.
 - [x] Add optional pinned Ed25519 sources, replay rejection, conflict-count review escalation, untrusted-data envelopes and targeted source deactivation.
 - [ ] Complete source-key rotation/revocation lifecycle and attributable audit records.
 - [x] Bound per-source logical-upload windows and queue admission; authenticate pinned sources before event persistence.
-- [ ] Add per-key anomaly review and full terminal-job archive/purge; do not silently evict Pending.
+- [x] Add explicit archive, purge, reconciliation and interrupted-maintenance recovery without evicting unresolved Pending.
+- [ ] Add per-key anomaly review and larger-scale retention/latency measurements.
 - [ ] Validate consumer behavior across clients: recalled data cannot authorize tool use, change permissions or become higher-priority instructions.
 
 Done when: forged/replayed/revoked inputs fail as specified, suspicious activity raises review,

@@ -347,7 +347,7 @@ class Retriever:
                 allowed.add(rec.get("project_id"))
         return allowed
 
-    def read(self, rid: str) -> dict:
+    def read(self, rid: str, freshness_cache=None) -> dict:
         meta = self.records[rid]
         raw = local_bytes(self.store, meta["record_path"])
         if hashlib.sha256(raw).hexdigest() != meta["record_sha256"]:
@@ -360,15 +360,18 @@ class Retriever:
             raise ValueError("RECORD_IDENTITY_CHANGED")
         if r.get("authority") != "accepted" or r.get("status") != "active":
             raise ValueError("RECORD_NOT_ACTIVE")
-        r["source_freshness"] = (
-            source_freshness.check(r)
-            if self.source_checks
-            else {
+        if self.source_checks:
+            cache = freshness_cache if freshness_cache is not None else {}
+            key = digest([r.get("source"), r.get("scope"), r.get("class")])
+            if key not in cache:
+                cache[key] = source_freshness.check(r)
+            r["source_freshness"] = dict(cache[key])
+        else:
+            r["source_freshness"] = {
                 "status": "NOT_CHECKED_SNAPSHOT",
                 "current_use_allowed": False,
                 "reason": "Explicit ranking-only evaluation mode.",
             }
-        )
         views = self.index.get("contexts", {}).get("node_views", {})
         if views:
             r["nodes"] = [
@@ -469,10 +472,26 @@ class Retriever:
                 semantic,
                 key=lambda rid: (-fused[rid], -dense.get(rid, 0), self.records[rid]["key"]),
             )
-        chosen = order[:limit]
+        chosen = []
         entries = []
-        for rid in chosen:
-            r = self.read(rid)
+        needs_review = []
+        stale_ids = set()
+        freshness_cache = {}
+        scan_limit = min(100, max(20, limit * 5))
+        scanned = 0
+
+        def usable(record):
+            return (
+                not self.source_checks
+                or record["source_freshness"]["current_use_allowed"]
+                or record.get("class") == "lesson"
+            )
+
+        for rid in order[:scan_limit]:
+            if len(chosen) >= limit:
+                break
+            r = self.read(rid, freshness_cache)
+            scanned += 1
             r["vector_pointer"] = {
                 "recall_tier": "primary",
                 "score": round(fused[rid], 8),
@@ -482,13 +501,20 @@ class Retriever:
                 "current_project_id": current,
                 "cross_project_reference": bool(r.get("project_id") and r["project_id"] != current),
             }
-            entries.append(r)
+            if usable(r):
+                entries.append(r)
+                chosen.append(rid)
+            else:
+                stale_ids.add(rid)
+                if len(needs_review) < 20:
+                    r["vector_pointer"]["recall_tier"] = "needs_review"
+                    needs_review.append(r)
         related = {}
         for position, rid in enumerate(chosen):
             for uid in self.records[rid]["node_uids"]:
                 for other in {uid} | self.adj[uid]:
                     for target in self.nodes[other]["record_ids"]:
-                        if target in chosen or target not in eligible:
+                        if target in chosen or target in stale_ids or target not in eligible:
                             continue
                         if self.records[target].get("project_id") != self.records[rid].get(
                             "project_id"
@@ -517,8 +543,10 @@ class Retriever:
                 -sparse.get(rid, 0),
                 self.records[rid]["key"],
             ),
-        )[:association_limit]:
-            r = self.read(rid)
+        )[: min(100, max(20, association_limit * 5))]:
+            if len(associated) >= association_limit:
+                break
+            r = self.read(rid, freshness_cache)
             r["vector_pointer"] = {
                 "recall_tier": "association",
                 "association_hops": min(x["hops"] for x in related[rid]["reasons"]),
@@ -526,18 +554,13 @@ class Retriever:
                 "current_project_id": current,
                 "cross_project_reference": bool(r.get("project_id") and r["project_id"] != current),
             }
-            associated.append(r)
+            if usable(r):
+                associated.append(r)
+            elif len(needs_review) < 20 and rid not in stale_ids:
+                stale_ids.add(rid)
+                r["vector_pointer"]["recall_tier"] = "needs_review"
+                needs_review.append(r)
         self.verify()
-        needs_review = []
-        if self.source_checks:
-            needs_review = [
-                r
-                for r in entries + associated
-                if not r["source_freshness"]["current_use_allowed"] and r.get("class") != "lesson"
-            ]
-            excluded = {r["id"] for r in needs_review}
-            entries = [r for r in entries if r["id"] not in excluded]
-            associated = [r for r in associated if r["id"] not in excluded]
         return {
             "status": "OK",
             "memory_graph_head": self.index["memory_graph_head"],
@@ -553,6 +576,11 @@ class Retriever:
             "retrieval": {
                 "method": "RRF",
                 "dense_enabled": bool(self.encoder),
+                "candidate_scan_limit": scan_limit,
+                "candidates_checked": scanned,
+                "scan_budget_exhausted": scanned >= scan_limit
+                and len(chosen) < limit
+                and len(order) > scanned,
                 "scope_mode": "current-plus-explicit-reference"
                 if current
                 else "unknown-context-with-labeled-lexical-references",

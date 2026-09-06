@@ -72,7 +72,7 @@ def main():
             check=True,
         )
         replies = [json.loads(line) for line in process.stdout.splitlines()]
-        assert replies[0]["result"]["serverInfo"]["version"] == "0.4.0"
+        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.0"
         pending = json.loads(replies[1]["result"]["content"][0]["text"])
         assert pending["status"] == "PENDING_CURATION"
         batch = cli("review", pending["upload_id"])
@@ -89,6 +89,24 @@ def main():
             cli("status", "--upload-id", pending["upload_id"])["upload"]["status"]
             == "ACTIVE_COMMITTED"
         )
+        assert (
+            cli("recall", "preference.editor.theme")["entries"][0]["body"] == "界面使用蓝色主题。"
+        )
+        plan_path = root / "archive-plan.json"
+        plan = cli(
+            "maintenance-plan",
+            "--action",
+            "archive",
+            "--older-than-days",
+            "0",
+            "--output",
+            str(plan_path),
+        )
+        assert (
+            cli("maintenance-apply", "--plan", str(plan_path), "--digest", plan["digest"])["status"]
+            == "MAINTENANCE_COMPLETE"
+        )
+        assert cli("status", "--upload-id", pending["upload_id"])["upload"]["storage"] == "archive"
         assert (
             cli("recall", "preference.editor.theme")["entries"][0]["body"] == "界面使用蓝色主题。"
         )

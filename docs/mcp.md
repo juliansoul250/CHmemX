@@ -2,7 +2,7 @@
 
 [简体中文](zh-CN/mcp.md) · [Home](../README.md)
 
-Install the [versioned package](../README.md#start-with-v04), then initialize a new store.
+Install the [versioned package](../README.md#start-with-v05), then initialize a new store.
 Keep the store outside this public source repository. Python 3.10+ and Git are required;
 no third-party Python package is needed for the base server. macOS is locally tested and
 Linux, macOS and Windows now have CI jobs. Consult the release commit's actual workflow results.
@@ -62,6 +62,9 @@ Values are bounded strings, not role/tool message objects. Approval still verifi
 
 The response always matters: `PENDING_CURATION` is not Active. `EXACT_DUPLICATE` creates no commit.
 New records share a topic node by their canonical-key parent (for example `preference.editor`).
+Request IDs are scoped to source agent + scope + registered project ID. Global preferences have
+no project ID. Exact-duplicate no-ops also retain explicit request bindings. Equal evidence text
+with a changed authority can return `change_kind=SOURCE_REFRESH` and a source diff for review.
 Their record vectors remain independent; scoped, bounded associations link related preferences.
 Advanced curators can retain richer reviewed node definitions through the existing bulk workflow.
 `CONFLICT` returns the old/new bodies and diff; do not choose for the Owner. `QUARANTINED` redacts
@@ -134,4 +137,5 @@ Active records still attributed to that source and blocks its future uploads. It
 history and later independent replacements. It does not blindly revert every historical commit.
 Local same-user processes can still edit files; this is governance, not an OS security boundary.
 
-See [v0.4 operation limits and backup/restore](v0.4.md) before maintenance or migration.
+An interrupted maintenance transaction is reported in `start.queue_health`. Administration remains
+outside MCP. See [maintenance](maintenance.md) and [v0.5 compatibility notes](v0.5.md).

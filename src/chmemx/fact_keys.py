@@ -32,7 +32,22 @@ def directory(runtime, cwd, query="", limit=30):
         row["allowed_classes"].append(r["class"])
     path = runtime.store / "fact-key-catalog.json"
     if path.exists():
-        payload = core.load_json(path)
+        committed = core.run_git(runtime.store, ["show", "HEAD:fact-key-catalog.json"], check=False)
+        if committed.returncode:
+            raise core.MemoryError(
+                "FACT_CATALOG_UNCOMMITTED",
+                "Commit the fact dictionary before it can govern review.",
+            )
+        try:
+            payload = core.load_json(path)
+        except core.MemoryError as error:
+            raise core.MemoryError(
+                "FACT_CATALOG_INVALID", "Fact dictionary could not be loaded.", cause=error.code
+            ) from error
+        if path.read_bytes() != committed.stdout:
+            raise core.MemoryError(
+                "FACT_CATALOG_CHANGED", "Fact dictionary differs from its committed bytes."
+            )
         facts = payload.get("facts")
         if not isinstance(facts, list) or len(facts) > 2000:
             raise ValueError("FACT_CATALOG_INVALID")
