@@ -97,7 +97,48 @@ class Maintenance:
                 files[rel] = {"sha256": core.sha256_file(p), "bytes": p.stat().st_size}
                 names.append(rel)
                 if p.suffix == ".json":
-                    parsed[rel] = core.load_json(p)
+                    value = core.load_json(p)
+                    if family == "uploads":
+                        fields = (
+                            "upload_id",
+                            "input_digest",
+                            "identity_version",
+                            "context",
+                            "source_agent",
+                            "status",
+                            "created_at",
+                            "closed_at",
+                            "batch_id",
+                            "batch_digest",
+                            "candidate_id",
+                            "review_history",
+                            "commit",
+                            "record_ids",
+                            "reason",
+                        )
+                        value = {k: value[k] for k in fields if k in value} | {
+                            "candidate": {
+                                "scope": value.get("candidate", {}).get("scope"),
+                                "source": {
+                                    "project_root": value.get("candidate", {})
+                                    .get("source", {})
+                                    .get("project_root")
+                                },
+                            }
+                        }
+                    elif family in {"batches", "batch_history"}:
+                        value = {
+                            k: value[k]
+                            for k in ("batch_id", "status", "created_at", "candidate_ids")
+                            if k in value
+                        }
+                    elif family == "candidates":
+                        value = {"candidate_id": value.get("candidate_id")}
+                    elif family == "events":
+                        value = {
+                            k: value[k] for k in ("upload_id", "status", "created_at") if k in value
+                        }
+                    parsed[rel] = value
             groups[family] = sorted(names)
         state_path = self.path("chmemx/state.json")
         state = (
