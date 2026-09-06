@@ -72,12 +72,12 @@ def main():
             check=True,
         )
         replies = [json.loads(line) for line in process.stdout.splitlines()]
-        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.0"
+        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.1"
         pending = json.loads(replies[1]["result"]["content"][0]["text"])
         assert pending["status"] == "PENDING_CURATION"
         batch = cli("review", pending["upload_id"])
         assert cli("review", pending["upload_id"])["batch_digest"] == batch["batch_digest"]
-        cli(
+        approved = cli(
             "approve",
             batch["batch_id"],
             "--digest",
@@ -110,6 +110,17 @@ def main():
         assert (
             cli("recall", "preference.editor.theme")["entries"][0]["body"] == "界面使用蓝色主题。"
         )
+        subprocess.run(
+            ["git", "-C", str(root / "store"), "revert", "--no-edit", approved["commit"]],
+            check=True,
+            capture_output=True,
+        )
+        assert (
+            cli("status", "--upload-id", pending["upload_id"])["upload"]["status"]
+            == "COMMIT_NOT_CURRENT"
+        )
+        assert cli("review", pending["upload_id"])["status"] == "COMMIT_NOT_CURRENT"
+        assert cli("recall", "preference.editor.theme")["entries"] == []
     print("INSTALLED_WHEEL_MCP_LIFECYCLE_PASS")
 
 

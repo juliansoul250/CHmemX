@@ -125,6 +125,18 @@ class MaintenanceAcceptance(unittest.TestCase):
         self.assertFalse(any("show" in cmd for cmd in commands))
         self.assertEqual(3, len(plan["targets"]["jobs"]))
 
+    def test_pending_reviews_share_one_git_history_walk(self):
+        for i in range(5):
+            upload = self.service.upload(**self.preference(key=f"preference.pending.item{i}"))
+            self.service.review(upload["upload_id"])
+        real = subprocess.Popen
+        with patch.object(subprocess, "Popen", wraps=real) as calls:
+            plan = self.service.maintenance_plan("archive", 0, limit=1)
+        commands = [call.args[0] for call in calls.call_args_list]
+        self.assertEqual([], plan["targets"]["jobs"])
+        self.assertLessEqual(sum("log" in command for command in commands), 1)
+        self.assertLessEqual(len(commands), 10, "No per-Pending Git process fanout.")
+
     def test_cannot_close_active_memory(self):
         upload = self.service.upload(**self.preference())
         self.approve_upload(upload)

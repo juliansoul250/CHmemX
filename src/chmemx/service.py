@@ -257,7 +257,11 @@ class Service:
         if job["status"] in {"EXACT_DUPLICATE", "REJECTED", "CANCELLED", "UPLOAD_DATA_MISSING"}:
             return job
         if job.get("batch_id") and job.get("batch_digest"):
-            result = self.runtime.approval_result(job["batch_id"], job["batch_digest"])
+            result = self.runtime.approval_result(
+                job["batch_id"],
+                job["batch_digest"],
+                upload_id=job["upload_id"] if job.get("identity_version") == 2 else None,
+            )
             if result:
                 job.update(result)
                 job["error"] = None

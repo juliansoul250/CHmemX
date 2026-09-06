@@ -168,7 +168,7 @@ class Maintenance:
         self._canonical_head = core.git_head(self.service.store)
         self._canonical_cache = {}
         self._proof_cache = {}
-        self._historical_proofs = {}
+        self._history_index = None
         process = subprocess.Popen(
             [shutil.which("git") or "git", "-C", str(self.service.store), "cat-file", "--batch"],
             stdin=subprocess.PIPE,
@@ -191,18 +191,20 @@ class Maintenance:
                 process.wait(timeout=5)
             self._git_process = None
 
-    def canonical_json(self, relative):
+    def canonical_json(self, relative, revision=None):
         relative = core.safe_relative(relative).as_posix()
-        if relative in self._canonical_cache:
-            return self._canonical_cache[relative]
+        revision = revision or self._canonical_head
+        key = (revision, relative)
+        if key in self._canonical_cache:
+            return self._canonical_cache[key]
         process = self._git_process
         if process is None:
             raise core.MemoryError("MAINTENANCE_READER_REQUIRED", "Canonical reader is not active.")
-        process.stdin.write(f"{self._canonical_head}:{relative}\n".encode("utf-8"))
+        process.stdin.write(f"{revision}:{relative}\n".encode("utf-8"))
         process.stdin.flush()
         header = process.stdout.readline()
         if header.rstrip().endswith(b" missing"):
-            self._canonical_cache[relative] = None
+            self._canonical_cache[key] = None
             return None
         parts = header.split()
         if (
@@ -220,6 +222,13 @@ class Maintenance:
             raise core.MemoryError("STORE_INVALID", "Canonical JSON is not an object.")
         # Approval bodies are not retained in the maintenance cache.
         if relative.startswith("approvals/"):
+            if (
+                value.get("type") != "memorygraph-simple-approval"
+                or not isinstance(value.get("records"), list)
+                or not value["records"]
+                or any(not isinstance(r, dict) for r in value["records"])
+            ):
+                raise core.MemoryError("APPROVAL_PROOF_INVALID", "Canonical approval is invalid.")
             value = {
                 **{k: value[k] for k in ("batch_id", "batch_digest", "committed_by_agent")},
                 "records": [
@@ -230,28 +239,88 @@ class Maintenance:
                     for r in value["records"]
                 ],
             }
-        self._canonical_cache[relative] = value
+        self._canonical_cache[key] = value
         return value
 
-    def proof_result(self, batch_id, expected_digest=None, need_commit=False):
+    def historical_commit(self, batch_id):
+        """One bounded, streamed ancestry walk shared by all missing receipts in this operation."""
+        if self._history_index is None:
+            index = {}
+            command = [
+                shutil.which("git") or "git",
+                "-C",
+                str(self.service.store),
+                "log",
+                "--format=commit:%H",
+                "--name-only",
+                "--diff-filter=A",
+                "--no-renames",
+                self._canonical_head,
+                "--",
+                "approvals",
+            ]
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            try:
+                commit = None
+                for n, raw in enumerate(process.stdout):
+                    if n >= 1500000:
+                        raise core.MemoryError(
+                            "APPROVAL_HISTORY_LIMIT", "Approval history needs operator review."
+                        )
+                    line = raw.decode("utf-8").strip()
+                    if line.startswith("commit:"):
+                        commit = line.removeprefix("commit:")
+                        if not core.COMMIT_RE.fullmatch(commit):
+                            raise core.MemoryError(
+                                "APPROVAL_HISTORY_INVALID", "Invalid history revision."
+                            )
+                    elif (
+                        line.startswith("approvals/")
+                        and line.endswith(".json")
+                        and line.count("/") == 1
+                    ):
+                        if commit is None:
+                            raise core.MemoryError(
+                                "APPROVAL_HISTORY_INVALID", "Missing history revision."
+                            )
+                        bid = core.safe_id(Path(line).stem, "batch id")
+                        index.setdefault(bid, commit)
+                if process.wait(timeout=5):
+                    raise core.MemoryError(
+                        "APPROVAL_HISTORY_UNAVAILABLE", "Cannot read approval history."
+                    )
+            finally:
+                process.stdout.close()
+                if process.poll() is None:
+                    process.kill()
+                    process.wait(timeout=5)
+            self._history_index = index
+        return self._history_index.get(batch_id)
+
+    def proof_result(self, batch_id, expected_digest=None, need_commit=False, upload_id=None):
         batch_id = core.safe_id(batch_id, "batch id")
         receipt = self.canonical_json(f"approvals/{batch_id}.json")
+        historical = None
         if receipt is None:
-            if expected_digest is None:
+            historical = self.historical_commit(batch_id)
+            if historical is None:
                 return None
-            key = (batch_id, expected_digest)
-            if key not in self._historical_proofs:
-                self._historical_proofs[key] = self.service.runtime.approval_result(
-                    batch_id, expected_digest
-                )
-            return copy.deepcopy(self._historical_proofs[key])
+            receipt = self.canonical_json(f"approvals/{batch_id}.json", historical)
+        if receipt is None or receipt.get("batch_id") != batch_id:
+            raise core.MemoryError("APPROVAL_PROOF_INVALID", "Canonical approval identity differs.")
+        if upload_id is not None and any(
+            r.get("upload_id") != upload_id for r in receipt["records"]
+        ):
+            raise core.MemoryError(
+                "APPROVAL_UPLOAD_MISMATCH", "Approval belongs to another upload."
+            )
         if expected_digest is not None and receipt["batch_digest"] != expected_digest:
             raise core.MemoryError(
                 "BATCH_CHANGED", "Canonical receipt differs from the queued digest."
             )
         if batch_id not in self._proof_cache:
             active = []
-            for record in receipt["records"]:
+            for record in receipt["records"] if historical is None else []:
                 root = (
                     "global"
                     if record["scope"] == "global"
@@ -261,7 +330,9 @@ class Maintenance:
                 if index["entries"].get(f"{record['class']}:{record['key']}") == record["id"]:
                     active.append(record["id"])
             self._proof_cache[batch_id] = {
-                "status": "ACTIVE_COMMITTED"
+                "status": "COMMIT_NOT_CURRENT"
+                if historical
+                else "ACTIVE_COMMITTED"
                 if len(active) == len(receipt["records"])
                 else "COMMITTED_NOT_ACTIVE",
                 "batch_id": batch_id,
@@ -272,7 +343,9 @@ class Maintenance:
                 "committed_by_agent": receipt["committed_by_agent"],
             }
         result = copy.deepcopy(self._proof_cache[batch_id])
-        if need_commit:
+        if historical:
+            result["commit"] = historical
+        elif need_commit:
             result["commit"] = (
                 core.run_git(
                     self.service.store,
@@ -300,7 +373,10 @@ class Maintenance:
         }:
             if result.get("batch_id") and result.get("batch_digest"):
                 committed = self.proof_result(
-                    result["batch_id"], result["batch_digest"], need_commit
+                    result["batch_id"],
+                    result["batch_digest"],
+                    need_commit,
+                    upload_id=result["upload_id"] if result.get("identity_version") == 2 else None,
                 )
                 if committed:
                     result.update(committed)
@@ -602,7 +678,8 @@ class Maintenance:
             for name in plan["targets"]["events"]:
                 changes[name] = None
         for rel in plan["targets"]["archives"]:
-            meta, _ = queue_archive.unpack(self.path(rel).read_bytes())
+            raw = self.path(rel).read_bytes()
+            meta, _ = queue_archive.unpack(raw)
             if meta.get("upload_id"):
                 receipt_rel = f"chmemx/receipts/{core.safe_id(meta['upload_id'], 'upload id')}.json"
                 receipt = parsed.get(receipt_rel)
@@ -611,6 +688,7 @@ class Maintenance:
                         "ARCHIVE_RECEIPT_MISMATCH",
                         "An archive cannot be purged without its bound receipt.",
                     )
+                self.queue.checked_archive(receipt, raw, meta["upload_id"])
                 receipt = {
                     k: v for k, v in receipt.items() if k not in {"archive_path", "archive_hash"}
                 }

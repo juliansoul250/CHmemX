@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.1 (2026-09-06)
+
+- Finish completed maintenance cleanup after a legitimate Git HEAD change, retaining byte checks.
+- Preserve bound lifecycle receipts when reading immutable archives, and validate them before purge.
+- Recover reverted approval proof from current Git ancestry even when upload writeback failed.
+- Take one full inventory per plan/application and share historical lookup across Pending batches.
+- Report missing recovery transactions and interrupted event accounting explicitly.
+- Share precise canonical rollback between approval and source revocation, preserving unrelated edits.
+- Keep TEAM confirmation, retention policy, source-agent MCP tools and retrieval settings unchanged.
+
+See [upgrade notes](docs/v0.5.1.md) or [中文说明](docs/zh-CN/v0.5.1.md).
+
 ## 0.3.1 — 2026-09-06
 
 - Fix a non-editable-install failure exposed by Linux CI: the source checkout could shadow

@@ -36,6 +36,10 @@ hash and size, estimated net space released, and temporary journal space needed.
 estimate means metadata is added rather than space released. Inventory totals cover uploads,
 candidates, batches, archives and receipts. The plan is valid for 24 hours.
 
+Each plan takes one full inventory; apply takes a fresh one and reuses it within that operation.
+Pending batches share one bounded history walk. `--limit` does not limit the scan, and cooperative
+writes still wait on the operation/store locks. Large stores therefore still have a maintenance cost.
+
 After explicitly approving that exact plan:
 
 ```bash
@@ -76,6 +80,11 @@ from a verified backup, or explicitly close it if the operator chooses to discar
 Do not manually edit `state.json` or remove upload/receipt files to clean the queue. Legacy requests
 without enough context cannot be safely rebound; use a new request ID or recover their input.
 
+`status` also reports `queue_health.event_accounting`. `RECONCILIATION_RECOMMENDED` means a raw-event
+write may have stopped between reservation and completion. The maintenance plan compares reserved
+and physical event counts. Explicit maintenance repairs the count without reusing event sequence IDs.
+`NO_INTERRUPTED_WRITE_RECORDED` is a metadata signal, not a full filesystem audit.
+
 ## Recover an interrupted operation
 
 `status` reports `queue_health` and the transaction ID. While recovery is needed, uploads, reviews
@@ -91,6 +100,16 @@ must be rolled back if required staged bytes were never written. Unexpected targ
 stop recovery without overwrite. Do not delete the recovery directory.
 If data changes finished and only journal cleanup was interrupted, use `complete`; that state cannot
 be rolled back by the interrupted-operation command. Purged payloads still require an independent backup.
+
+Completed cleanup accepts a later legitimate Git HEAD while still checking the sealed journal and
+target/staging bytes. Git-only source registration, source deactivation, project registration and
+revert may proceed in this cleanup-only state. They are blocked during unfinished preparation or
+application. Upload, review and approval remain blocked until cleanup finishes. A nonexistent
+transaction ID returns `TRANSACTION_NOT_FOUND`; do not fix it by removing another transaction's files.
+
+Archive reads and purge both validate the archive/request-receipt binding. A mismatch preserves the
+payload and returns `ARCHIVE_RECEIPT_MISMATCH`. Reverted approval proof can be recovered from Git
+ancestry, so moving a request to an archive or receipt does not make it eligible for review again.
 
 Journals address process interruption, not disk destruction. Enable and test separate backups only
 if your retention policy calls for them. This upgrade enables no automatic cleanup or backup.

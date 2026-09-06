@@ -166,6 +166,44 @@ class CommitProofAcceptance(unittest.TestCase):
             self.service.runtime.approval_result(review["batch_id"], "sha256:" + "0" * 64)
         self.assertEqual("BATCH_CHANGED", err.exception.code)
 
+    def test_purge_cannot_remove_evidence_of_an_archive_identity_mismatch(self):
+        uploaded, _, _ = self.approved_without_writeback()
+        self.maintain("archive")
+        uid = uploaded["upload_id"]
+        receipt_path = self.service.state / "receipts" / f"{uid}.json"
+        original = core.load_json(receipt_path)
+        archive_path = self.service.state / original["archive_path"]
+        archive_bytes = archive_path.read_bytes()
+        core.atomic_json(receipt_path, {**original, "input_digest": "sha256:" + "f" * 64})
+        with self.assertRaises(core.MemoryError) as err:
+            self.maintain("purge")
+        self.assertEqual("ARCHIVE_RECEIPT_MISMATCH", err.exception.code)
+        self.assertEqual(archive_bytes, archive_path.read_bytes())
+        self.assertIn("archive_path", core.load_json(receipt_path))
+
+    def test_receipt_only_job_cannot_claim_another_uploads_approval(self):
+        uploaded, _, _ = self.approved_without_writeback()
+        self.maintain("archive")
+        self.maintain("purge")
+        other = self.service.upload(**self.preference(key="preference.editor.other"))
+        review = self.service.review(other["upload_id"])
+        self.service.approve(
+            review["batch_id"], review["batch_digest"], review["required_confirmation"]
+        )
+        uid = uploaded["upload_id"]
+        path = self.service.state / "receipts" / f"{uid}.json"
+        core.atomic_json(
+            path,
+            {
+                **core.load_json(path),
+                "batch_id": review["batch_id"],
+                "batch_digest": review["batch_digest"],
+            },
+        )
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.upload_status(uid)
+        self.assertEqual("APPROVAL_UPLOAD_MISMATCH", err.exception.code)
+
 
 if __name__ == "__main__":
     unittest.main()

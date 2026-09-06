@@ -240,44 +240,47 @@ class QueueState:
             path = self.root / core.safe_relative(receipt["archive_path"])
             if path.is_symlink() or any(p.is_symlink() for p in path.parents):
                 raise core.MemoryError("ARCHIVE_PATH_INVALID", "Archive symlink rejected.")
-            raw = path.read_bytes()
-            if core.sha256_bytes(raw) != receipt["archive_hash"]:
-                raise core.MemoryError("ARCHIVE_CHANGED", "Queue archive failed its byte seal.")
-            try:
-                metadata, files = queue_archive.unpack(raw)
-                job = json.loads(files[f"chmemx/uploads/{upload_id}.json"])
-            except (ValueError, KeyError, OSError) as error:
-                raise core.MemoryError("ARCHIVE_INVALID", "Queue archive is unreadable.") from error
-            job = self.checked_job(job, upload_id, "archive")
-            if metadata.get("upload_id") != upload_id or metadata.get("kind") != "upload":
-                raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Archive owner differs.")
-            for field in (
-                "upload_id",
-                "input_digest",
-                "source_agent",
-                "identity_version",
-                "context",
-                "batch_id",
-                "batch_digest",
-            ):
-                if job.get(field) != receipt.get(field):
-                    raise core.MemoryError(
-                        "ARCHIVE_RECEIPT_MISMATCH",
-                        "Archive and receipt identity differ.",
-                        field=field,
-                    )
-            if not job.get("context"):
-                candidate = job.get("candidate", {})
-                if receipt.get("legacy_scope") != candidate.get("scope") or receipt.get(
-                    "legacy_project_root"
-                ) != candidate.get("source", {}).get("project_root"):
-                    raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Legacy context differs.")
-            # Source bytes stay immutable; only the bound lifecycle receipt supplies proof.
-            for field in ("status", "commit", "record_ids", "closed_at", "reason", "archived_at"):
-                if field in receipt:
-                    job[field] = receipt[field]
-            return job
+            return self.checked_archive(receipt, path.read_bytes(), upload_id)
         return self.checked_job(receipt, upload_id, "receipt")
+
+    @staticmethod
+    def checked_archive(receipt, raw, upload_id):
+        """One binding check for reads and destructive archive maintenance."""
+        QueueState.checked_job(receipt, upload_id, "receipt")
+        if core.sha256_bytes(raw) != receipt.get("archive_hash"):
+            raise core.MemoryError("ARCHIVE_CHANGED", "Queue archive failed its byte seal.")
+        try:
+            metadata, files = queue_archive.unpack(raw)
+            job = json.loads(files[f"chmemx/uploads/{upload_id}.json"])
+        except (ValueError, KeyError, OSError) as error:
+            raise core.MemoryError("ARCHIVE_INVALID", "Queue archive is unreadable.") from error
+        job = QueueState.checked_job(job, upload_id, "archive")
+        if metadata.get("upload_id") != upload_id or metadata.get("kind") != "upload":
+            raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Archive owner differs.")
+        for field in (
+            "upload_id",
+            "input_digest",
+            "source_agent",
+            "identity_version",
+            "context",
+            "batch_id",
+            "batch_digest",
+        ):
+            if job.get(field) != receipt.get(field):
+                raise core.MemoryError(
+                    "ARCHIVE_RECEIPT_MISMATCH", "Archive and receipt identity differ.", field=field
+                )
+        if not job.get("context"):
+            candidate = job.get("candidate", {})
+            if receipt.get("legacy_scope") != candidate.get("scope") or receipt.get(
+                "legacy_project_root"
+            ) != candidate.get("source", {}).get("project_root"):
+                raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Legacy context differs.")
+        # Source bytes stay immutable; only the bound lifecycle receipt supplies proof.
+        for field in ("status", "commit", "record_ids", "closed_at", "reason", "archived_at"):
+            if field in receipt:
+                job[field] = receipt[field]
+        return job
 
     @staticmethod
     def checked_job(value, upload_id, storage):

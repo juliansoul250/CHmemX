@@ -28,6 +28,8 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project \
 
 检查 `targets`、`target_files`、`blockers` 和 `preserve`。计划列出逐文件哈希、前后大小、预计净释放空间和临时恢复日志所需空间。空间变化为负，表示会增加元数据。统计覆盖上传、候选、批次、归档及回执。计划 24 小时内有效。
 
+准备计划完整扫描一次；执行时重新扫描一次，再复用本次结果。待审批次共用一次有界历史查询。`--limit` 不限制扫描量，协作写入仍须等待操作锁和存储锁，因此大仓库维护仍有成本。
+
 明确确认这份计划后，再执行：
 
 ```bash
@@ -58,6 +60,8 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project \
 
 不要手改 `state.json` 或直接删除上传/回执来清理。无法核实来源的旧请求，需要恢复原输入或使用新请求编号。
 
+`status` 的 `queue_health.event_accounting` 会报告事件计数情况。`RECONCILIATION_RECOMMENDED` 表示事件可能在占位与写入完成之间中断；维护计划会比较占位数和实际文件数。明确执行维护后可修正计数，但不复用事件编号。`NO_INTERRUPTED_WRITE_RECORDED` 仅表示没有记录到中断，不等于做过全盘审计。
+
 中断时，`status` 的 `queue_health` 会给出事务编号。队列写入暂停，正式记忆查询仍可用，备份需等事务恢复后进行：
 
 ```bash
@@ -67,6 +71,10 @@ chmemx --store /absolute/private-memory --agent-id main-memory-curator \
 
 准备完整、字节和 HEAD 未变时，可以用 `complete` 继续。若准备阶段尚未写齐日志，应回滚再生成计划。目标或日志遭到额外修改时，恢复会停止，不覆盖它；不要删除恢复目录。
 若数据处理已完成，只剩日志清理中断，应使用 `complete`。该状态不能再用中断恢复命令回滚；已清理的正文仍需独立备份才能找回。
+
+仅剩清理时，可以接受之后合法的 Git HEAD 变化，但仍核验日志封印、目标与暂存字节。来源注册、来源停用、项目注册和回滚这类纯 Git 管理操作可在该状态进行；准备或执行尚未完成时则被阻断。上传、审阅和批准需等清理结束。事务编号不存在会报 `TRANSACTION_NOT_FOUND`，不要通过删除其他事务文件来处理。
+
+读取和清理归档都核对归档与请求回执的绑定，不一致则报 `ARCHIVE_RECEIPT_MISMATCH` 并保留正文。已撤销审批的提交证明可以从 Git 历史恢复，请求不会因转入归档或仅保留回执而重新获得审阅资格。
 
 日志处理进程中断，不代替硬盘损坏时的独立备份。升级不会自动开启清理或备份。
 

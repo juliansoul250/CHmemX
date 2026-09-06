@@ -457,7 +457,7 @@ class SimpleMemory:
         """Public, current Active view for one project plus global preferences."""
         return self._all_active(project_id)
 
-    def approval_result(self, batch_id: str, expected_digest: str):
+    def approval_result(self, batch_id: str, expected_digest: str, *, upload_id: str | None = None):
         """Resolve current or reverted proof from this HEAD's Git ancestry, never queue claims."""
         safe_id(batch_id, "batch id")
         ensure_clean(self.store)
@@ -494,10 +494,15 @@ class SimpleMemory:
             or receipt.get("batch_id") != batch_id
             or not isinstance(receipt.get("records"), list)
             or not receipt["records"]
+            or any(not isinstance(record, dict) for record in receipt["records"])
         ):
             raise MemoryError("APPROVAL_PROOF_INVALID", "Committed approval identity is invalid.")
         if receipt.get("batch_digest") != expected_digest:
             raise MemoryError("BATCH_CHANGED", "Committed approval digest differs.")
+        if upload_id is not None:
+            safe_id(upload_id, "upload id")
+            if any(record.get("upload_id") != upload_id for record in receipt["records"]):
+                raise MemoryError("APPROVAL_UPLOAD_MISMATCH", "Approval belongs to another upload.")
         active_ids = []
         indexes = {}
         for record in receipt["records"] if present else []:

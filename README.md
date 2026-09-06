@@ -19,14 +19,14 @@ nodes, requests owner approval, and commits permanent memory atomically to Git.
 > CHmemX is designed to prevent normal workflow mistakes and memory conflicts. It is not an OS
 > security boundary against a malicious process running as the same user.
 
-## Start with v0.5
+## Start with v0.5.1
 
 CHmemX now exposes three stdio MCP tools: `start`, `recall`, and `upload`.
 No server port, database service, API key, or embedding download is required for the default setup.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.0'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.1'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
@@ -42,6 +42,7 @@ the write policy, not the same security guarantee with fewer clicks. Existing st
 their policy. Nothing enables personal mode on upgrade.
 
 - [MCP configuration and tool arguments](docs/mcp.md)
+- [v0.5.1 recovery fixes and upgrade notes](docs/v0.5.1.md)
 - [v0.5 upload lifecycle and upgrade notes](docs/v0.5.md)
 - [Queue maintenance and recovery](docs/maintenance.md)
 - [v0.3 design decisions, limits, and measured results](docs/v0.3.md)
