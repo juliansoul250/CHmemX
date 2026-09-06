@@ -100,7 +100,7 @@ class LocalEncoder:
 
         self.np = np
         self.root = model_dir.resolve()
-        self.lock = json.loads((self.root / "model-lock.json").read_text())
+        self.lock = json.loads((self.root / "model-lock.json").read_text(encoding="utf-8"))
         if not {"model.onnx", "tokenizer.json"}.issubset(self.lock.get("files", {})):
             raise ValueError("MODEL_LOCK_INCOMPLETE")
         if (
@@ -193,7 +193,7 @@ def build(
             raise ValueError("RECORD_CHANGED")
         record = json.loads(committed)
         meta["record_sha256"] = hashlib.sha256(committed).hexdigest()
-        meta["active_index_path"] = str(Path(rel).parent.parent / "active-index.json")
+        meta["active_index_path"] = (Path(rel).parent.parent / "active-index.json").as_posix()
         protected.add(meta["active_index_path"])
         text = record.get("body", "")
         raw_bodies[meta["id"]] = text
@@ -583,8 +583,12 @@ def main():
                 Path(args.store),
                 Path(args.taxonomy),
                 Path(args.model_dir) if args.model_dir else None,
-                json.loads(Path(args.contexts).read_text()) if args.contexts else None,
-                json.loads(Path(args.previous).read_text()) if args.previous else None,
+                json.loads(Path(args.contexts).read_text(encoding="utf-8"))
+                if args.contexts
+                else None,
+                json.loads(Path(args.previous).read_text(encoding="utf-8"))
+                if args.previous
+                else None,
             )
             save(Path(args.output), index)
             result = {
@@ -596,7 +600,7 @@ def main():
                 "output": args.output,
             }
         else:
-            result = Retriever(json.loads(Path(args.index).read_text())).recall(
+            result = Retriever(json.loads(Path(args.index).read_text(encoding="utf-8"))).recall(
                 args.query, Path(args.cwd), args.limit
             )
         print(json.dumps(result, ensure_ascii=False, indent=2))

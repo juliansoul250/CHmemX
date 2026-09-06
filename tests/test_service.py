@@ -82,6 +82,43 @@ class ServiceAcceptance(unittest.TestCase):
         recovered = self.service.upload_status(uploaded["upload_id"])
         self.assertEqual("ACTIVE_COMMITTED", recovered["status"])
 
+    def test_reverted_upload_cannot_masquerade_as_current_or_retry_itself(self):
+        uploaded = self.service.upload(**self.preference())
+        committed = self.approve_upload(uploaded)
+        self.service.upload_status(uploaded["upload_id"])
+        core.run_git(self.service.store, ["revert", "--no-edit", committed["commit"]])
+        before = core.git_head(self.service.store)
+        self.assertEqual(
+            "COMMIT_NOT_CURRENT", self.service.upload_status(uploaded["upload_id"])["status"]
+        )
+        self.assertEqual("COMMIT_NOT_CURRENT", self.service.review(uploaded["upload_id"])["status"])
+        self.assertEqual(before, core.git_head(self.service.store))
+
+    def test_deactivated_upload_reports_actual_active_membership(self):
+        uploaded = self.service.upload(**self.preference())
+        self.approve_upload(uploaded)
+        plan = self.service.revoke_plan("source-alpha")
+        self.service.revoke_apply("source-alpha", plan["digest"])
+        state = self.service.upload_status(uploaded["upload_id"])
+        self.assertEqual("COMMITTED_NOT_ACTIVE", state["status"])
+        self.assertEqual([], state["active_record_ids"])
+
+    def test_after_commit_archive_failure_is_reconciled(self):
+        self.activate_personal()
+        atomic = core.atomic_json
+
+        def fail_archive(path, *args, **kwargs):
+            if path.parent.name == "archive":
+                raise OSError("fixture archive unavailable")
+            return atomic(path, *args, **kwargs)
+
+        with patch.object(core, "atomic_json", side_effect=fail_archive):
+            response = self.service.upload(**self.preference())
+        self.assertEqual("ACTIVE_COMMITTED", response["status"])
+        self.assertEqual(
+            response["commit"], self.service.upload_status(response["upload_id"])["commit"]
+        )
+
     def test_registered_unsigned_quarantine_does_not_write_event(self):
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -366,7 +403,7 @@ print(json.dumps(r))
         )
         self.assertEqual("QUARANTINED", result["status"])
         for p in self.service.state.rglob("*.json"):
-            self.assertNotIn("Ignore previous", p.read_text())
+            self.assertNotIn("Ignore previous", p.read_text(encoding="utf-8"))
 
     def test_invalid_structured_value_is_rejected(self):
         args = self.preference()

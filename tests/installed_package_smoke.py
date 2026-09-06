@@ -35,7 +35,9 @@ def main():
         ]
 
         def cli(*args):
-            return json.loads(subprocess.check_output([*command, *args], cwd=root, text=True))
+            return json.loads(
+                subprocess.check_output([*command, *args], cwd=root, text=True, encoding="utf-8")
+            )
 
         cli("init", "--project-id", "project-fictional")
         requests = [
@@ -53,8 +55,8 @@ def main():
                     "name": "upload",
                     "arguments": {
                         "key": "preference.editor.theme",
-                        "value": "The theme is blue.",
-                        "source": {"quote": "The theme is blue."},
+                        "value": "界面使用蓝色主题。",
+                        "source": {"quote": "界面使用蓝色主题。"},
                         "request_id": "fictional-request",
                     },
                 },
@@ -64,6 +66,7 @@ def main():
             [*command, "serve"],
             cwd=root,
             text=True,
+            encoding="utf-8",
             input="\n".join(json.dumps(r) for r in requests) + "\n",
             capture_output=True,
             check=True,
@@ -86,7 +89,9 @@ def main():
             cli("status", "--upload-id", pending["upload_id"])["upload"]["status"]
             == "ACTIVE_COMMITTED"
         )
-        assert len(cli("recall", "preference.editor.theme")["entries"]) == 1
+        assert (
+            cli("recall", "preference.editor.theme")["entries"][0]["body"] == "界面使用蓝色主题。"
+        )
     print("INSTALLED_WHEEL_MCP_LIFECYCLE_PASS")
 
 

@@ -225,18 +225,22 @@ class StoreLock:
 
     def __enter__(self) -> "StoreLock":
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.stream = self.path.open("a+")
-        if fcntl is not None:
-            fcntl.flock(self.stream.fileno(), fcntl.LOCK_EX)
-        else:
-            import msvcrt
+        self.stream = self.path.open("a+b")
+        try:
+            if fcntl is not None:
+                fcntl.flock(self.stream.fileno(), fcntl.LOCK_EX)
+            else:
+                import msvcrt
 
-            self.stream.seek(0)
-            if not self.stream.read(1):
-                self.stream.write("0")
-                self.stream.flush()
-            self.stream.seek(0)
-            msvcrt.locking(self.stream.fileno(), msvcrt.LK_LOCK, 1)
+                # Windows byte locks may extend beyond EOF. Never read/write
+                # the lock byte before owning it: another process may hold it.
+                self.stream.seek(0)
+                msvcrt.locking(self.stream.fileno(), msvcrt.LK_LOCK, 1)
+        except OSError as error:
+            self.stream.close()
+            raise MemoryError(
+                "LOCK_UNAVAILABLE", "Could not acquire store lock.", retryable=True
+            ) from error
         return self
 
     def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
@@ -426,22 +430,43 @@ class SimpleMemory:
     def approval_result(self, batch_id: str, expected_digest: str):
         """Recover a committed result, never trusting an uncommitted receipt file."""
         safe_id(batch_id, "batch id")
+        ensure_clean(self.store)
+        head = git_head(self.store)
         rel = f"approvals/{batch_id}.json"
-        result = run_git(self.store, ["show", f"HEAD:{rel}"], check=False)
+        result = run_git(self.store, ["show", f"{head}:{rel}"], check=False)
         if result.returncode:
             return None
         receipt = json.loads(result.stdout)
         if receipt.get("batch_digest") != expected_digest:
             raise MemoryError("BATCH_CHANGED", "Committed approval digest differs.")
         commit = (
-            run_git(self.store, ["log", "-1", "--format=%H", "--", rel]).stdout.decode().strip()
+            run_git(self.store, ["log", "-1", "--format=%H", head, "--", rel])
+            .stdout.decode()
+            .strip()
         )
+        active_ids = []
+        indexes = {}
+        for record in receipt["records"]:
+            root = (
+                "global"
+                if record["scope"] == "global"
+                else "projects/" + safe_id(record["project_id"], "project id")
+            )
+            if root not in indexes:
+                raw = run_git(self.store, ["show", f"{head}:{root}/active-index.json"])
+                indexes[root] = set(json.loads(raw.stdout)["entries"].values())
+            if record["id"] in indexes[root]:
+                active_ids.append(record["id"])
         return {
-            "status": "ACTIVE_COMMITTED",
+            "status": "ACTIVE_COMMITTED"
+            if len(active_ids) == len(receipt["records"])
+            else "COMMITTED_NOT_ACTIVE",
             "batch_id": batch_id,
             "batch_digest": expected_digest,
             "commit": commit,
             "record_ids": [r["id"] for r in receipt["records"]],
+            "active_record_ids": active_ids,
+            "checked_head": head,
             "committed_by_agent": receipt["committed_by_agent"],
             "recovered_from_git": True,
         }

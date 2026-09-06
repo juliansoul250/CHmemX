@@ -169,6 +169,8 @@ def dispatch(service, message, initialized):
 
 
 def serve(service):
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     initialized = False
     while True:
         raw = sys.stdin.buffer.readline(MAX_BYTES + 1)

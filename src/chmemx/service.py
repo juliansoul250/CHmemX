@@ -241,6 +241,17 @@ class Service:
                 job["error"] = None
                 job["retryable"] = False
                 self.queue.update(job)
+            elif job.get("commit"):
+                job.update(
+                    status="COMMIT_NOT_CURRENT",
+                    active_record_ids=[],
+                    retryable=False,
+                    error={
+                        "code": "COMMIT_NOT_CURRENT",
+                        "message": "Approval is absent at current HEAD; submit a new reviewed request, not an automatic retry.",
+                    },
+                )
+                self.queue.update(job)
         return job
 
     @staticmethod
@@ -253,6 +264,8 @@ class Service:
             "batch_id",
             "batch_digest",
             "record_ids",
+            "active_record_ids",
+            "checked_head",
             "commit",
             "error",
             "retryable",
@@ -272,7 +285,7 @@ class Service:
 
     def _prepare(self, job, agent):
         self._sync_job(job)
-        if job["status"] == "ACTIVE_COMMITTED":
+        if job["status"] in {"ACTIVE_COMMITTED", "COMMITTED_NOT_ACTIVE", "COMMIT_NOT_CURRENT"}:
             return self._summary(job)
         if job.get("prepared_by") and job["prepared_by"] != agent:
             self._new_revision(job)
@@ -342,7 +355,7 @@ class Service:
 
     def _pending_error(self, job, error):
         self._sync_job(job)
-        if job["status"] == "ACTIVE_COMMITTED":
+        if job["status"] in {"ACTIVE_COMMITTED", "COMMITTED_NOT_ACTIVE", "COMMIT_NOT_CURRENT"}:
             return self._summary(job)
         code = getattr(
             error, "code", "IO_ERROR" if isinstance(error, OSError) else "PREPARATION_FAILED"
@@ -543,7 +556,7 @@ class Service:
         with core.StoreLock(self.state / "locks/operation"):
             job = core.load_json(self._job_path(upload_id))
             self._sync_job(job)
-            if job["status"] == "ACTIVE_COMMITTED":
+            if job["status"] in {"ACTIVE_COMMITTED", "COMMITTED_NOT_ACTIVE", "COMMIT_NOT_CURRENT"}:
                 return self._summary(job)
             if refresh:
                 self._new_revision(job)

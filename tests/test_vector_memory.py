@@ -295,12 +295,12 @@ class VectorMemoryAcceptance(unittest.TestCase):
             title="限额中断恢复",
             keywords=["限额", "429", "断点续作"],
         )
-        active_index = json.loads((self.store / "global" / "active-index.json").read_text())
+        active_index = json.loads((self.store / "global" / "active-index.json").read_text(encoding="utf-8"))
         active_index["entries"]["preference:workflow.quota.documentation"] = "memory-docs"
         (self.store / "global" / "active-index.json").write_text(
             json.dumps(active_index, ensure_ascii=False), encoding="utf-8"
         )
-        taxonomy = json.loads(self.taxonomy.read_text())
+        taxonomy = json.loads(self.taxonomy.read_text(encoding="utf-8"))
         taxonomy["cells"][0]["member_keys"].append("workflow.quota.documentation")
         self.taxonomy.write_text(json.dumps(taxonomy, ensure_ascii=False), encoding="utf-8")
         subprocess.run(["git", "add", "."], cwd=self.store, check=True)
@@ -405,7 +405,7 @@ class VectorMemoryAcceptance(unittest.TestCase):
         self.assertEqual(2, process.returncode)
         self.assertFalse(output.exists())
         self.assertTrue(failure_report.is_file())
-        self.assertFalse(json.loads(failure_report.read_text())["index_published"])
+        self.assertFalse(json.loads(failure_report.read_text(encoding="utf-8"))["index_published"])
         self.assertIn("QUALITY_GATE_FAILED", process.stdout)
 
 

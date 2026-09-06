@@ -5,12 +5,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 from .service import Service
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     parser = argparse.ArgumentParser(prog="chmemx")
     parser.add_argument(
         "--store",
@@ -94,7 +97,7 @@ def main():
             result = service.review(args.upload_id, refresh=args.refresh)
         elif args.command == "trust-source":
             result = service.trust_source(
-                args.source_agent, args.public_key_file.read_text().strip()
+                args.source_agent, args.public_key_file.read_text(encoding="utf-8").strip()
             )
         elif args.command == "revoke-source":
             result = (

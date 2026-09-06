@@ -60,7 +60,8 @@ def directory(runtime, cwd, query="", limit=30):
             else:
                 core.safe_id(row.get("project_id"), "fact project id")
             for alias in [row["key"], *row["aliases"]]:
-                core.canonical_key(alias)
+                if core.canonical_key(alias) != alias:
+                    raise ValueError("FACT_CATALOG_NONCANONICAL_KEY")
                 identity = (row.get("project_id"), row["scope"], alias)
                 if identity in seen:
                     raise ValueError("FACT_ALIAS_AMBIGUOUS")
