@@ -2,10 +2,10 @@
 
 [简体中文](zh-CN/mcp.md) · [Home](../README.md)
 
-Install the [versioned package](../README.md#start-with-v03), then initialize a new store.
+Install the [versioned package](../README.md#start-with-v04), then initialize a new store.
 Keep the store outside this public source repository. Python 3.10+ and Git are required;
 no third-party Python package is needed for the base server. macOS is locally tested and
-Linux runs in CI. The Windows lock backend exists; full Windows acceptance remains pending.
+Linux, macOS and Windows now have CI jobs. Consult the release commit's actual workflow results.
 
 ## Client configuration
 
@@ -40,9 +40,9 @@ The server supports tools, initialization and ping, not resources, prompts, HTTP
 
 | Tool | Input | Result |
 |---|---|---|
-| `start` | optional `query` | Project context, policy mode, source statistics, optional recall |
-| `recall` | `query`, optional `limit` 1–20 | Accepted Active bodies, source badges, project labels, graph associations |
-| `upload` | `key`, string `value`, `source`; optional `scope`, `memory_class`, `signature` | Duplicate, Pending, conflict, quarantine, or policy-authorized commit |
+| `start` | optional `query`, `upload_id`, `key_query` | Project context, policy, source statistics, job status, fact-key directory |
+| `recall` | `query`, optional `limit` 1–20 | Accepted records, source freshness, associations; stale facts separated into `needs_review` |
+| `upload` | `key`, string `value`, `source`; optional `scope`, `memory_class`, `signature`, `request_id` | Duplicate, Pending, conflict, quarantine, or policy-authorized commit |
 
 Example global preference:
 
@@ -83,15 +83,17 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project approve BATC
   --digest EXACT_DIGEST --confirmation 'EXACT_OWNER_PHRASE_FROM_REVIEW'
 ```
 
-These placeholders are not authorization. Do not fabricate the confirmation, reuse an old one,
+Repeated `review` reuses the batch. Explicit `review UPLOAD_ID --refresh` retires it and requires
+a new confirmation. Query admitted uploads with `start(upload_id=...)` or CLI `status --upload-id`.
+Review provides exact English and Chinese confirmation strings. These placeholders are not authorization. Do not fabricate the confirmation, reuse an old one,
 or accept another agent's relay or quoted/annotated text. Changed source/HEAD/batch requires review again.
 Approval, key registration, policy editing and source revocation are deliberately absent from MCP tools.
 Bulk curators retain the [existing workflow](curation.md).
 
 Personal mode is selected only at new-store initialization with `--mode personal`. It trusts only
-that configured `--agent-id`, considers low-risk new `preference.*` / `fact.*` keys, and routes a
+that configured `--agent-id`, considers low-risk new `preference.*` preferences, and routes a
 deterministic 10% digest sample to pre-write review. Conflicts and sensitive changes always stay
-pending. Three conflicts in the last five source events raise review for that source. This is
+pending. Three conflicts in the previous five distinct uploads raise review for that source. This is
 basic operational monitoring, not a reputation model or a guarantee against poisoning.
 The operator owns `policy.json`; a caller cannot select mode or identity in an upload argument.
 
@@ -114,6 +116,8 @@ The private key stays with its source tool. Sign UTF-8 JSON with sorted keys, co
 and literal Unicode: `{"agent_id":...,"payload":...,"nonce":...,"expires_at":...}`.
 `payload` includes all five normalized tool input fields: key, value, source, scope, memory_class.
 Signature is excluded. `expires_at` is an integer Unix time within the next 24 hours.
+When provided, `request_id` is also part of the signed payload. A retried signature remains a
+replay; use a new signed nonce or query the existing upload status.
 Attach `signature={"signature":"base64 bytes","nonce":"unique-safe-id","expires_at":...}`.
 Registered sources must sign; changed content and reused source/nonces fail. Signatures prove
 key possession, not honesty, role entitlement or safe instructions. Registry and keys need operator control.
@@ -129,3 +133,5 @@ The second command requires an explicit Owner decision on the plan. It deactivat
 Active records still attributed to that source and blocks its future uploads. It preserves Git
 history and later independent replacements. It does not blindly revert every historical commit.
 Local same-user processes can still edit files; this is governance, not an OS security boundary.
+
+See [v0.4 operation limits and backup/restore](v0.4.md) before maintenance or migration.

@@ -21,8 +21,10 @@ from typing import Any
 
 try:
     from . import vector_memory as lexical
+    from . import source_freshness
 except ImportError:
     import vector_memory as lexical
+    import source_freshness
 
 TYPE = "memorygraph-hybrid-pointer-v3"
 STRICT = dict(
@@ -280,13 +282,14 @@ def build(
 
 
 class Retriever:
-    def __init__(self, index: dict):
+    def __init__(self, index: dict, *, source_checks: bool = True):
         if index.get("type") != TYPE:
             raise ValueError("INDEX_VERSION_UNSUPPORTED")
         core = {k: v for k, v in index.items() if k != "index_digest"}
         if digest(core) != index.get("index_digest"):
             raise ValueError("INDEX_DIGEST_MISMATCH")
         self.index = index
+        self.source_checks = source_checks
         self.store = Path(index["memory_graph_store"]).resolve()
         self.records = {r["id"]: r for r in index["records"]}
         self.nodes = {n["uid"]: n for n in index["nodes"]}
@@ -357,6 +360,15 @@ class Retriever:
             raise ValueError("RECORD_IDENTITY_CHANGED")
         if r.get("authority") != "accepted" or r.get("status") != "active":
             raise ValueError("RECORD_NOT_ACTIVE")
+        r["source_freshness"] = (
+            source_freshness.check(r)
+            if self.source_checks
+            else {
+                "status": "NOT_CHECKED_SNAPSHOT",
+                "current_use_allowed": False,
+                "reason": "Explicit ranking-only evaluation mode.",
+            }
+        )
         views = self.index.get("contexts", {}).get("node_views", {})
         if views:
             r["nodes"] = [
@@ -516,6 +528,16 @@ class Retriever:
             }
             associated.append(r)
         self.verify()
+        needs_review = []
+        if self.source_checks:
+            needs_review = [
+                r
+                for r in entries + associated
+                if not r["source_freshness"]["current_use_allowed"] and r.get("class") != "lesson"
+            ]
+            excluded = {r["id"] for r in needs_review}
+            entries = [r for r in entries if r["id"] not in excluded]
+            associated = [r for r in associated if r["id"] not in excluded]
         return {
             "status": "OK",
             "memory_graph_head": self.index["memory_graph_head"],
@@ -526,6 +548,8 @@ class Retriever:
             "current_project_id": current,
             "entries": entries,
             "associations": associated,
+            "needs_review": needs_review,
+            "source_checks": self.source_checks,
             "retrieval": {
                 "method": "RRF",
                 "dense_enabled": bool(self.encoder),

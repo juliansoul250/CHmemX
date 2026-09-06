@@ -19,14 +19,14 @@ nodes, requests owner approval, and commits permanent memory atomically to Git.
 > CHmemX is designed to prevent normal workflow mistakes and memory conflicts. It is not an OS
 > security boundary against a malicious process running as the same user.
 
-## Start with v0.3
+## Start with v0.4
 
 CHmemX now exposes three stdio MCP tools: `start`, `recall`, and `upload`.
 No server port, database service, API key, or embedding download is required for the default setup.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.3.1'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.4.0'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
@@ -36,12 +36,13 @@ Use an existing Git project and a new, separate memory directory. Add the
 The index is rebuilt lazily after approved commits; source agents do not manage index files.
 
 Working alone? Add `--mode personal` to `init`. Only configured sources can auto-save low-risk
-new `preference.*` / `fact.*` records; exact duplicates create no new commit. Conflicts, sensitive
+new `preference.*` preferences; exact duplicates create no new commit. Conflicts, sensitive
 content, and a deterministic 10% sample still require review. This is an explicit relaxation of
 the write policy, not the same security guarantee with fewer clicks. Existing stores keep
 their policy. Nothing enables personal mode on upgrade.
 
 - [MCP configuration and tool arguments](docs/mcp.md)
+- [v0.4 review decisions, retry recovery, queue limits and source freshness](docs/v0.4.md)
 - [v0.3 design decisions, limits, and measured results](docs/v0.3.md)
 - [Optional local semantic retrieval](docs/semantic.md)
 - [Ordered backlog and acceptance gates](BACKLOG.md)
@@ -65,7 +66,7 @@ CHmemX separates the responsibilities:
 [![CHmemX v0.3 architecture](docs/assets/v03-en.png)](docs/v03-en.html)
 
 Open the [v0.3 interactive map](docs/v03-en.html). The [earlier full team pipeline](docs/architecture.html)
-is retained as versioned design history.
+is retained as versioned design history. Current behavior is defined by [v0.4](docs/v0.4.md).
 
 ## Key properties
 

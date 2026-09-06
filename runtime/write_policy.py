@@ -67,10 +67,12 @@ def check_automatic(policy: dict, candidates: list[dict], agent: str) -> None:
     if agent not in policy.get("trusted_source_agents", []):
         raise ValueError("SOURCE_REVIEW_REQUIRED")
     for item in candidates:
+        if item.get("class") != "preference":
+            raise ValueError("FACTS_REQUIRE_REVIEW")
         if risk(item)["level"] != "low" or item.get("expected_current_id"):
             raise ValueError("OWNER_REVIEW_REQUIRED")
         # Deliberately cover only explicit low-risk key namespaces.
         if not str(item["key"]).startswith(
-            tuple(policy.get("auto_key_prefixes", ["preference.", "fact."]))
+            tuple(policy.get("auto_key_prefixes", ["preference."]))
         ):
             raise ValueError("OWNER_REVIEW_REQUIRED")

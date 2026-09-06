@@ -69,7 +69,7 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id source-one --model-dir /absolute/private/models/minilm serve
 ```
 
-The standard MCP service creates a simple project/global directory.
+The standard MCP service creates a simple project-scoped, key-parent topic directory.
 Switching `--model-dir` takes effect without waiting for a new memory commit. Clients sharing
 the simple service index should use the same model setting to avoid repeated rebuilds.
 Advanced deployments can build
@@ -90,6 +90,10 @@ record byte hashes, identity and current accepted+active membership. Graph expan
 to one hop in the primary record's project. With a registered context, foreign projects need
 an explicit project/key reference. Without a known context, high-confidence lexical foreign
 matches can also be returned, always labeled; this fallback is not project access control.
+
+v0.4 also checks the bound source file. Stale/unverifiable project facts are separated into
+`needs_review`; historical lessons are labeled. Frozen ranking evaluations must explicitly
+distinguish that snapshot-only comparison from current-source eligibility. See [v0.4](v0.4.md).
 
 ## Failure and rollback
 

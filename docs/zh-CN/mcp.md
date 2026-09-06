@@ -3,8 +3,8 @@
 [English](../mcp.md) · [中文主页](../../README.zh-CN.md)
 
 按主页安装和初始化。真实记忆必须位于工具仓库之外。基础入口仅需 Python 3.10+ 和 Git，
-没有端口、常驻服务、API Key 或模型下载。macOS 本机已测；Linux 由 CI 验证。Windows
-已加入锁后端，但完整平台验收未完成。
+没有端口、常驻服务、API Key 或模型下载。CI 已增加 Linux、macOS 和 Windows 矩阵；
+以对应提交的实际结果为准。
 
 ## 配置客户端
 
@@ -79,9 +79,15 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project approve BATC
 ## 可选单人模式
 
 仅新建仓库时通过 `init --mode personal` 开启。只信任初始化指定的来源，只自动保存低风险
-`preference.*` / `fact.*` 新增项。冲突、敏感内容和按摘要确定的 10% 抽样在写入前审查。
-某来源最近五个事件中冲突达到三次，会进入高审查档；这不是声誉评分，也不能保证识别恶意。
+`preference.*` 偏好新增项。其他事实、冲突、敏感内容和按摘要确定的 10% 抽样在写入前审查。
+某来源之前五次独立上传中冲突达到三次，会进入高审查档；这不是声誉评分，也不能保证识别恶意。
 升级不会修改旧仓库政策；上传参数不能自选身份或模式。
+
+v0.4 的 `upload` 可带 `request_id`，`start` 可带 `upload_id` 查询状态，或带 `key_query` 查询事实键。
+重复 review 复用批次；`review 上传ID --refresh` 明确废弃旧审阅，再请求新的精确确认。
+注册过公钥的签名正文须包含提供的 `request_id`；重放原签名仍拒绝。
+`recall` 将过期或不可核对的项目事实单列到 `needs_review`，不可当成当前事实执行。
+见 [v0.4 变更与边界](v0.4.md)。
 
 新增项目：
 

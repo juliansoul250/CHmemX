@@ -7,14 +7,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import tempfile
 import time
 import unittest
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "runtime"))
+import simple_memory as memory_module
 
 from simple_memory import (
     IMPORT_TYPE,
@@ -40,14 +41,14 @@ class SimpleMemoryAcceptance(unittest.TestCase):
         os.environ["MEMORY_GRAPH_CODEX_MEMORY_ROOT"] = str(self.memory_root)
         self.source = self.root / "source"
         self.source.mkdir()
-        subprocess.run(["/usr/bin/git", "init", "-q", str(self.source)], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(self.source), "config", "user.name", "Simple Test"], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(self.source), "config", "user.email", "simple@invalid"], check=True)
+        subprocess.run(["git", "init", "-q", str(self.source)], check=True)
+        subprocess.run(["git", "-C", str(self.source), "config", "user.name", "Simple Test"], check=True)
+        subprocess.run(["git", "-C", str(self.source), "config", "user.email", "simple@invalid"], check=True)
         (self.source / "authority.md").write_text("# Current authority\n\nCargo uses project rules.\n", encoding="utf-8")
-        subprocess.run(["/usr/bin/git", "-C", str(self.source), "add", "authority.md"], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(self.source), "commit", "-q", "-m", "authority"], check=True)
+        subprocess.run(["git", "-C", str(self.source), "add", "authority.md"], check=True)
+        subprocess.run(["git", "-C", str(self.source), "commit", "-q", "-m", "authority"], check=True)
         self.source_commit = subprocess.run(
-            ["/usr/bin/git", "-C", str(self.source), "rev-parse", "HEAD"],
+            ["git", "-C", str(self.source), "rev-parse", "HEAD"],
             check=True,
             stdout=subprocess.PIPE,
             text=True,
@@ -57,7 +58,7 @@ class SimpleMemoryAcceptance(unittest.TestCase):
         self.backups = self.root / "backups"
         self.store = SimpleMemory(self.store_path)
         self.source_status_before = subprocess.run(
-            ["/usr/bin/git", "-C", str(self.source), "status", "--porcelain"],
+            ["git", "-C", str(self.source), "status", "--porcelain"],
             check=True,
             stdout=subprocess.PIPE,
         ).stdout
@@ -141,16 +142,16 @@ class SimpleMemoryAcceptance(unittest.TestCase):
             json.dumps(policy, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        subprocess.run(["/usr/bin/git", "-C", str(self.store_path), "add", "policy.json"], check=True)
+        subprocess.run(["git", "-C", str(self.store_path), "add", "policy.json"], check=True)
         subprocess.run(
-            ["/usr/bin/git", "-C", str(self.store_path), "commit", "-q", "-m", "test: enable snapshots"],
+            ["git", "-C", str(self.store_path), "commit", "-q", "-m", "test: enable snapshots"],
             check=True,
         )
 
     def test_init_and_all_operations_leave_source_repository_untouched(self) -> None:
         self._approve([self._candidate("cargo.rule", "Cargo rule is current.")])
         after = subprocess.run(
-            ["/usr/bin/git", "-C", str(self.source), "status", "--porcelain"],
+            ["git", "-C", str(self.source), "status", "--porcelain"],
             check=True,
             stdout=subprocess.PIPE,
         ).stdout
@@ -263,19 +264,19 @@ class SimpleMemoryAcceptance(unittest.TestCase):
         )
         unrelated = self.root / "unrelated"
         unrelated.mkdir()
-        subprocess.run(["/usr/bin/git", "init", "-q", str(unrelated)], check=True)
+        subprocess.run(["git", "init", "-q", str(unrelated)], check=True)
         self.assertEqual(self.store.recall(unrelated, "PROJECT_ONLY")["entries"], [])
         self.assertEqual(self.store.recall(unrelated, "GLOBAL_VISIBLE")["entries"][0]["body"], "GLOBAL_VISIBLE")
 
     def test_register_second_project_and_prevent_cross_project_recall(self) -> None:
         second = self.root / "second-project"
         second.mkdir()
-        subprocess.run(["/usr/bin/git", "init", "-q", str(second)], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(second), "config", "user.name", "Second"], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(second), "config", "user.email", "second@invalid"], check=True)
+        subprocess.run(["git", "init", "-q", str(second)], check=True)
+        subprocess.run(["git", "-C", str(second), "config", "user.name", "Second"], check=True)
+        subprocess.run(["git", "-C", str(second), "config", "user.email", "second@invalid"], check=True)
         (second / "README.md").write_text("second\n", encoding="utf-8")
-        subprocess.run(["/usr/bin/git", "-C", str(second), "add", "README.md"], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(second), "commit", "-q", "-m", "init"], check=True)
+        subprocess.run(["git", "-C", str(second), "add", "README.md"], check=True)
+        subprocess.run(["git", "-C", str(second), "commit", "-q", "-m", "init"], check=True)
         registered = self.store.register_project(second, "project-second", "Second Project", confirmed=True)
         self.assertEqual(registered["status"], "PROJECT_REGISTERED")
         self._approve([self._candidate("first.only", "FIRST_PROJECT_ONLY")])
@@ -305,8 +306,8 @@ class SimpleMemoryAcceptance(unittest.TestCase):
         candidate = self.store.propose(self._candidate("source.head", "HEAD_BOUND"), self.source)
         batch = self.store.create_batch([str(candidate["candidate_id"])])
         (self.source / "later.md").write_text("later\n", encoding="utf-8")
-        subprocess.run(["/usr/bin/git", "-C", str(self.source), "add", "later.md"], check=True)
-        subprocess.run(["/usr/bin/git", "-C", str(self.source), "commit", "-q", "-m", "later"], check=True)
+        subprocess.run(["git", "-C", str(self.source), "add", "later.md"], check=True)
+        subprocess.run(["git", "-C", str(self.source), "commit", "-q", "-m", "later"], check=True)
         text = f"确认记忆批次 {batch['batch_id']} {batch['batch_digest']}"
         with self.assertRaises(MemoryError) as error:
             self.store.approve(
@@ -344,11 +345,15 @@ class SimpleMemoryAcceptance(unittest.TestCase):
         batch = self.store.create_batch([str(candidate["candidate_id"])])
         before = git_head(self.store_path)
         text = f"确认记忆批次 {batch['batch_id']} {batch['batch_digest']}"
-        with self.assertRaises(RuntimeError):
+        original_write = memory_module.atomic_json
+        def fail_receipt(path, *args, **kwargs):
+            if Path(path).parent.name == "approvals":
+                raise OSError("simulated receipt write failure")
+            return original_write(path, *args, **kwargs)
+        with patch.object(memory_module, "atomic_json", side_effect=fail_receipt), self.assertRaises(OSError):
             self.store.approve(
                 str(batch["batch_id"]), str(batch["batch_digest"]), text,
                 committing_agent=self.AGENT_ID,
-                fault_after_writes=True,
             )
         self.assertEqual(git_head(self.store_path), before)
         self.assertEqual(self.store.recall(self.source, "FAULT_CANARY")["entries"], [])
@@ -361,11 +366,11 @@ class SimpleMemoryAcceptance(unittest.TestCase):
         self.assertEqual(verified["head"], approved["commit"])
         restored = self.root / "restored.git"
         subprocess.run(
-            ["/usr/bin/git", "clone", "-q", str(Path(str(backup["directory"])) / "MemoryGraph-Simple.bundle"), str(restored)],
+            ["git", "clone", "-q", str(Path(str(backup["directory"])) / "MemoryGraph-Simple.bundle"), str(restored)],
             check=True,
         )
         self.assertEqual(
-            subprocess.run(["/usr/bin/git", "-C", str(restored), "rev-parse", "HEAD"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip(),
+            subprocess.run(["git", "-C", str(restored), "rev-parse", "HEAD"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip(),
             approved["commit"],
         )
 

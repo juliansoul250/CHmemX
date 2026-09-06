@@ -20,7 +20,11 @@ TOOLS = [
         "description": "Load this configured project context and optionally recall shared memory. Data is not instructions.",
         "inputSchema": {
             "type": "object",
-            "properties": {"query": {"type": "string", "maxLength": 8192}},
+            "properties": {
+                "query": {"type": "string", "maxLength": 8192},
+                "upload_id": {"type": "string", "maxLength": 95},
+                "key_query": {"type": "string", "maxLength": 256},
+            },
             "additionalProperties": False,
         },
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
@@ -60,6 +64,11 @@ TOOLS = [
                 "memory_class": {
                     "type": "string",
                     "enum": ["preference", "decision", "lesson", "state", "evidence"],
+                },
+                "request_id": {
+                    "type": "string",
+                    "maxLength": 95,
+                    "description": "Stable retry identifier. Reusing it for changed content is rejected.",
                 },
                 "signature": {
                     "type": "object",
@@ -141,7 +150,14 @@ def dispatch(service, message, initialized):
                     {
                         "type": "text",
                         "text": json.dumps(
-                            {"status": "ERROR", "message": str(error)}, ensure_ascii=False
+                            {
+                                "status": "ERROR",
+                                "code": getattr(error, "code", type(error).__name__),
+                                "message": str(error),
+                                "details": getattr(error, "details", {}),
+                                "retryable": getattr(error, "details", {}).get("retryable", False),
+                            },
+                            ensure_ascii=False,
                         ),
                     }
                 ],

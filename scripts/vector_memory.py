@@ -305,7 +305,7 @@ def collect_active(store: Path) -> tuple[dict[str, Any], list[dict[str, Any]], l
                     "scope": record["scope"],
                     "project_id": project_id,
                     "node_uids": node_uids,
-                    "record_path": str(path.resolve().relative_to(store.resolve())),
+                    "record_path": path.resolve().relative_to(store.resolve()).as_posix(),
                     "submitted_by_agent": record.get("submitted_by_agent"),
                     "committed_by_agent": record.get("committed_by_agent"),
                     "_body": record.get("body") or "",

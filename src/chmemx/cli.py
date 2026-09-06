@@ -28,11 +28,27 @@ def main():
     register.add_argument("--project-id", required=True)
     register.add_argument("--title", required=True)
     sub.add_parser("serve")
-    sub.add_parser("status")
+    status = sub.add_parser("status")
+    status.add_argument("--upload-id")
+    sub.add_parser("maintenance-plan")
+    nonce_maintenance = sub.add_parser("maintenance-nonces")
+    nonce_maintenance.add_argument("--digest", required=True)
+    backup = sub.add_parser("backup")
+    backup.add_argument("--output-root", type=Path, required=True)
+    backup.add_argument(
+        "--pending-root",
+        action="append",
+        default=[],
+        help="label=/explicit/shared/pending/root; never auto-discovered",
+    )
+    restore = sub.add_parser("restore-backup")
+    restore.add_argument("--directory", type=Path, required=True)
+    restore.add_argument("--destination", type=Path, required=True)
     recall = sub.add_parser("recall")
     recall.add_argument("query")
     review = sub.add_parser("review")
     review.add_argument("upload_id")
+    review.add_argument("--refresh", action="store_true")
     approve = sub.add_parser("approve")
     approve.add_argument("batch_id")
     approve.add_argument("--digest", required=True)
@@ -62,11 +78,20 @@ def main():
                 args.cwd, args.project_id, args.title, confirmed=True
             )
         elif args.command == "status":
-            result = service.start()
+            result = service.start(upload_id=args.upload_id)
+        elif args.command == "maintenance-plan":
+            result = service.queue.maintenance_plan()
+        elif args.command == "maintenance-nonces":
+            result = service.queue.maintain_nonces(args.digest)
+        elif args.command == "backup":
+            roots = dict(x.split("=", 1) for x in args.pending_root)
+            result = service.runtime.create_backup(args.output_root, extra_pending_roots=roots)
+        elif args.command == "restore-backup":
+            result = service.runtime.restore_backup(args.directory, args.destination)
         elif args.command == "recall":
             result = service.recall(args.query)
         elif args.command == "review":
-            result = service.review(args.upload_id)
+            result = service.review(args.upload_id, refresh=args.refresh)
         elif args.command == "trust-source":
             result = service.trust_source(
                 args.source_agent, args.public_key_file.read_text().strip()
@@ -78,17 +103,21 @@ def main():
                 else service.revoke_plan(args.source_agent)
             )
         else:
-            result = service.runtime.approve(
-                args.batch_id,
-                args.digest,
-                args.confirmation,
-                committing_agent="main-memory-curator",
-            )
-            result["retrieval"] = service.rebuild()
+            result = service.approve(args.batch_id, args.digest, args.confirmation)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except Exception as error:
-        print(json.dumps({"status": "ERROR", "message": str(error)}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "code": getattr(error, "code", type(error).__name__),
+                    "message": str(error),
+                    "details": getattr(error, "details", {}),
+                },
+                ensure_ascii=False,
+            )
+        )
         return 2
 
 
