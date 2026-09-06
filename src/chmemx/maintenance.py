@@ -168,6 +168,7 @@ class Maintenance:
         self._canonical_head = core.git_head(self.service.store)
         self._canonical_cache = {}
         self._proof_cache = {}
+        self._historical_proofs = {}
         process = subprocess.Popen(
             [shutil.which("git") or "git", "-C", str(self.service.store), "cat-file", "--batch"],
             stdin=subprocess.PIPE,
@@ -236,7 +237,14 @@ class Maintenance:
         batch_id = core.safe_id(batch_id, "batch id")
         receipt = self.canonical_json(f"approvals/{batch_id}.json")
         if receipt is None:
-            return None
+            if expected_digest is None:
+                return None
+            key = (batch_id, expected_digest)
+            if key not in self._historical_proofs:
+                self._historical_proofs[key] = self.service.runtime.approval_result(
+                    batch_id, expected_digest
+                )
+            return copy.deepcopy(self._historical_proofs[key])
         if expected_digest is not None and receipt["batch_digest"] != expected_digest:
             raise core.MemoryError(
                 "BATCH_CHANGED", "Canonical receipt differs from the queued digest."
@@ -327,11 +335,12 @@ class Maintenance:
             self.canonical_reader(),
         ):
             self.queue.assert_ready()
-            return self._plan(action, older_than_days, limit, cutoff)
+            return self._plan(action, older_than_days, limit, cutoff)[0]
 
     def _plan(self, action, days, limit, cutoff):
         core.ensure_clean(self.service.store)
-        files, parsed, groups, state = self.inventory()
+        inventory = self.inventory()
+        files, parsed, groups, state = inventory
         jobs = {}
         for rel in groups["uploads"]:
             job = parsed[rel]
@@ -470,6 +479,12 @@ class Maintenance:
             "missing_upload_files": missing[:limit],
             "unindexed_upload_files": unindexed[:limit],
             "reconciliation_totals": {"missing": len(missing), "unindexed": len(unindexed)},
+            "event_accounting": {
+                "reserved_files": state["event_files"],
+                "actual_files": len(groups["events"]),
+                "interrupted_write_recorded": bool(state.get("event_write_incomplete")),
+                "counts_match": state["event_files"] == len(groups["events"]),
+            },
             "blockers": []
             if action == "reconcile" or not (missing or unindexed)
             else ["QUEUE_RECONCILIATION_REQUIRED"],
@@ -486,7 +501,7 @@ class Maintenance:
         result["archive_token"] = core.sha256_bytes(
             core.canonical_json([result["inventory_digest"], cutoff, targets])
         ).split(":")[1]
-        preview = self._changes(result)
+        preview = self._changes(result, inventory)
         result["target_files"] = {
             rel: {
                 "before_hash": files.get(rel, {}).get("sha256"),
@@ -505,10 +520,10 @@ class Maintenance:
         result["digest"] = core.sha256_bytes(core.canonical_json(result))
         if core.git_head(self.service.store) != self._canonical_head:
             raise core.MemoryError("HEAD_CHANGED", "Canonical state moved during inventory.")
-        return result
+        return result, preview
 
-    def _changes(self, plan):
-        files, parsed, groups, state = self.inventory()
+    def _changes(self, plan, inventory):
+        files, parsed, groups, state = inventory
         state = copy.deepcopy(state)
         changes = {}
         now = plan["planned_at"]
@@ -519,6 +534,10 @@ class Maintenance:
                 _, data = queue_archive.unpack(self.path(prior).read_bytes())
             for name in names:
                 raw = self.path(name).read_bytes()
+                if core.sha256_bytes(raw) != files[name]["sha256"]:
+                    raise core.MemoryError(
+                        "MAINTENANCE_PLAN_CHANGED", "Archive input moved after inventory."
+                    )
                 extra = queue_archive.unpack(raw)[1] if name.endswith(".gz") else {name: raw}
                 for key, value in extra.items():
                     if key in data and data[key] != value:
@@ -666,6 +685,7 @@ class Maintenance:
         state["event_files"] = len(
             [p for p in groups["events"] if changes.get(p, b"keep") is not None]
         )
+        state["event_write_incomplete"] = False
         changes["chmemx/state.json"] = json_bytes(state)
         return changes
 
@@ -706,14 +726,13 @@ class Maintenance:
                     "RECEIPT_RETENTION_MINIMUM",
                     "Receipt expiry cannot shorten the retention minimum.",
                 )
-            fresh = self._plan(
+            fresh, changes = self._plan(
                 plan["action"], plan["older_than_days"], plan["limit_per_family"], plan["cutoff"]
             )
             if fresh != plan or plan["blockers"]:
                 raise core.MemoryError(
                     "MAINTENANCE_PLAN_CHANGED", "Inventory, HEAD or reconciliation state changed."
                 )
-            changes = self._changes(plan)
             before = {
                 rel: self.path(rel).read_bytes() if self.path(rel).exists() else None
                 for rel in changes
@@ -807,7 +826,14 @@ class Maintenance:
         ):
             core.safe_id(transaction_id, "transaction id")
             if not (self.control / "active.json").exists():
-                return core.load_json(self.control / "receipts" / f"{transaction_id}.json")
+                receipt = self.control / "receipts" / f"{transaction_id}.json"
+                if not receipt.exists() and not receipt.is_symlink():
+                    raise core.MemoryError(
+                        "TRANSACTION_NOT_FOUND",
+                        "No active or completed maintenance transaction matches.",
+                        transaction_id=transaction_id,
+                    )
+                return core.load_json(receipt)
             journal = core.load_json(self.control / "active.json")
             if journal.get("transaction_id") != transaction_id:
                 raise core.MemoryError("RECOVERY_ID_MISMATCH", "Exact transaction ID required.")
@@ -823,10 +849,6 @@ class Maintenance:
             != journal.get("digest")
         ):
             raise core.MemoryError("RECOVERY_JOURNAL_CHANGED", "Journal seal failed.")
-        if action == "complete" and core.git_head(self.service.store) != journal["store_head"]:
-            raise core.MemoryError(
-                "RECOVERY_HEAD_CHANGED", "Canonical HEAD changed; only rollback is available."
-            )
         staging = self.control / core.safe_id(journal["transaction_id"], "transaction id")
         if journal.get("phase") == "COMPLETED":
             if action == "rollback" and journal["completed_side"] == "after":
@@ -842,6 +864,10 @@ class Maintenance:
                         "RECOVERY_CONFLICT", "A completed target changed; no overwrite.", path=rel
                     )
             return self._cleanup_journal(journal)
+        if action == "complete" and core.git_head(self.service.store) != journal["store_head"]:
+            raise core.MemoryError(
+                "RECOVERY_HEAD_CHANGED", "Canonical HEAD changed; only rollback is available."
+            )
         if journal.get("phase") == "PREPARING":
             for rel, entry in journal["entries"].items():
                 current = core.sha256_file(self.path(rel)) if self.path(rel).exists() else None

@@ -1,5 +1,6 @@
 """Maintenance touches only disposable fixtures; production cleanup is never a test."""
 
+import base64
 import datetime as dt
 import subprocess
 from pathlib import Path
@@ -103,6 +104,13 @@ class MaintenanceAcceptance(unittest.TestCase):
         plan = self.service.maintenance_plan("archive", 0)
         first = self.service.maintenance_apply(plan, plan["digest"])
         self.assertEqual(first, self.service.maintenance_apply(plan, plan["digest"]))
+
+    def test_missing_recovery_transaction_has_a_domain_not_found_code(self):
+        head = core.git_head(self.service.store)
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.maintenance_recover("txn-absent")
+        self.assertEqual("TRANSACTION_NOT_FOUND", err.exception.code)
+        self.assertEqual(head, core.git_head(self.service.store))
 
     def test_canonical_proofs_use_one_batch_reader(self):
         for i in range(3):
@@ -251,6 +259,71 @@ class MaintenanceAcceptance(unittest.TestCase):
             self.service.runtime.create_backup(self.root / "backups")
         self.assertEqual("MAINTENANCE_RECOVERY_REQUIRED", err.exception.code)
 
+    def test_completed_cleanup_survives_a_later_source_registration(self):
+        self.closed()
+        plan = self.service.maintenance_plan("archive", 0)
+        unlink = Path.unlink
+
+        def stop_cleanup(path, *args, **kwargs):
+            if path.name.startswith("part-"):
+                raise OSError("Fixture cleanup interruption.")
+            return unlink(path, *args, **kwargs)
+
+        with patch.object(Path, "unlink", stop_cleanup), self.assertRaises(core.MemoryError) as err:
+            self.service.maintenance_apply(plan, plan["digest"])
+        tx = err.exception.details["transaction_id"]
+        self.service.trust_source("source-beta", base64.b64encode(bytes(range(32))).decode())
+        head = core.git_head(self.service.store)
+        self.assertEqual(
+            "MAINTENANCE_COMPLETE", self.service.maintenance_recover(tx, "complete")["status"]
+        )
+        self.assertEqual(head, core.git_head(self.service.store))
+        self.assertEqual("READY", self.service.start()["queue_health"]["status"])
+        self.assertEqual(
+            "PENDING_CURATION",
+            self.service.upload(**self.preference(key="preference.next"))["status"],
+        )
+
+    def test_unfinished_maintenance_blocks_git_only_administration(self):
+        tx = self.interrupted()
+        head = core.git_head(self.service.store)
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.trust_source("source-beta", base64.b64encode(bytes(range(32))).decode())
+        self.assertEqual("MAINTENANCE_RECOVERY_REQUIRED", err.exception.code)
+        plan = self.service.revoke_plan("source-alpha")
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.revoke_apply("source-alpha", plan["digest"])
+        self.assertEqual("MAINTENANCE_RECOVERY_REQUIRED", err.exception.code)
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.runtime.register_project(
+                self.project, "project-other", "Fixture", confirmed=True
+            )
+        self.assertEqual("MAINTENANCE_RECOVERY_REQUIRED", err.exception.code)
+        self.assertEqual(head, core.git_head(self.service.store))
+        self.assertEqual("MAINTENANCE_ROLLED_BACK", self.service.maintenance_recover(tx)["status"])
+
+    def test_completed_cleanup_keeps_byte_checks_after_head_change(self):
+        self.closed()
+        plan = self.service.maintenance_plan("archive", 0)
+        unlink = Path.unlink
+
+        def stop_cleanup(path, *args, **kwargs):
+            if path.name.startswith("part-"):
+                raise OSError("Fixture cleanup interruption.")
+            return unlink(path, *args, **kwargs)
+
+        with patch.object(Path, "unlink", stop_cleanup), self.assertRaises(core.MemoryError) as err:
+            self.service.maintenance_apply(plan, plan["digest"])
+        tx = err.exception.details["transaction_id"]
+        self.service.trust_source("source-beta", base64.b64encode(bytes(range(32))).decode())
+        state_path = self.service.queue.path
+        changed = {**core.load_json(state_path), "fixture_external_edit": True}
+        core.atomic_json(state_path, changed)
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.maintenance_recover(tx, "complete")
+        self.assertEqual("RECOVERY_CONFLICT", err.exception.code)
+        self.assertEqual(changed, core.load_json(state_path))
+
     def test_reconcile_deleted_payload_keeps_tombstone_and_releases_slot(self):
         self.set_policy(queue_limits={"max_uploads": 1})
         upload = self.service.upload(**self.preference(), request_id="missing")
@@ -275,6 +348,51 @@ class MaintenanceAcceptance(unittest.TestCase):
         before = core.load_json(self.service.queue.path)["event_sequence"]
         self.service.upload(**self.preference(key="preference.next"))
         self.assertGreater(core.load_json(self.service.queue.path)["event_sequence"], before)
+
+    def test_each_maintenance_operation_hashes_untargeted_archives_once(self):
+        self.closed()
+        self.apply()
+        witness = next((self.service.state / "archives/uploads").glob("*.gz"))
+        opened = []
+        original = Path.open
+
+        def observe(path, *args, **kwargs):
+            if path == witness and (args[0] if args else kwargs.get("mode")) == "rb":
+                opened.append(path)
+            return original(path, *args, **kwargs)
+
+        with patch.object(Path, "open", observe):
+            plan = self.service.maintenance_plan("archive", 30, limit=1)
+        self.assertEqual(1, len(opened), "Plan must not repeat the full archive hash pass.")
+        opened.clear()
+        with patch.object(Path, "open", observe):
+            self.service.maintenance_apply(plan, plan["digest"])
+        self.assertEqual(
+            1, len(opened), "Apply must take one fresh inventory, not reuse the old plan."
+        )
+
+    def test_event_write_interruption_is_visible_until_explicit_reconciliation(self):
+        write = core.atomic_bytes
+
+        def fail_event(path, *args, **kwargs):
+            if path.parent == self.service.state / "events":
+                raise OSError("Fixture event write interruption.")
+            return write(path, *args, **kwargs)
+
+        with patch.object(core, "atomic_bytes", fail_event), self.assertRaises(OSError):
+            self.service.event("TEST_EVENT", upload_id="fixture-event")
+        accounting = self.service.start()["queue_health"]["event_accounting"]
+        self.assertEqual("RECONCILIATION_RECOMMENDED", accounting["status"])
+        self.assertEqual(1, accounting["reserved_files"])
+        self.service.event("TEST_EVENT", upload_id="fixture-next-event")
+        self.assertEqual(
+            "RECONCILIATION_RECOMMENDED",
+            self.service.start()["queue_health"]["event_accounting"]["status"],
+        )
+        self.apply("reconcile")
+        accounting = self.service.start()["queue_health"]["event_accounting"]
+        self.assertEqual("NO_INTERRUPTED_WRITE_RECORDED", accounting["status"])
+        self.assertEqual(1, accounting["reserved_files"])
 
     def test_archive_and_receipts_are_restorable(self):
         self.set_policy(snapshots_enabled=True)

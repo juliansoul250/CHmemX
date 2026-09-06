@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+from contextlib import contextmanager
 import datetime as dt
 
 try:
@@ -199,6 +200,28 @@ def ensure_clean(root: Path) -> None:
         raise MemoryError(
             "STORE_DIRTY", "Tracked canonical files changed outside an approved transaction."
         )
+
+
+def ensure_queue_ready(store: Path, *, canonical_only: bool = False) -> None:
+    """Gate mutations under the store lock; completed cleanup permits Git-only admin."""
+    path = store / ".queue/chmemx/maintenance/active.json"
+    if not path.exists() and not path.is_symlink():
+        return
+    journal = load_json(path)
+    if canonical_only and (
+        journal.get("type") == "chmemx-maintenance-journal-v1"
+        and journal.get("store") == str(store)
+        and journal.get("phase") == "COMPLETED"
+        and journal.get("completed_side") in {"before", "after"}
+        and sha256_bytes(canonical_json({k: v for k, v in journal.items() if k != "digest"}))
+        == journal.get("digest")
+    ):
+        return
+    raise MemoryError(
+        "MAINTENANCE_RECOVERY_REQUIRED",
+        "Finish or roll back the interrupted queue transaction.",
+        transaction_id=journal.get("transaction_id"),
+    )
 
 
 def safe_relative(value: str) -> PurePosixPath:
@@ -435,25 +458,49 @@ class SimpleMemory:
         return self._all_active(project_id)
 
     def approval_result(self, batch_id: str, expected_digest: str):
-        """Recover a committed result, never trusting an uncommitted receipt file."""
+        """Resolve current or reverted proof from this HEAD's Git ancestry, never queue claims."""
         safe_id(batch_id, "batch id")
         ensure_clean(self.store)
         head = git_head(self.store)
         rel = f"approvals/{batch_id}.json"
         result = run_git(self.store, ["show", f"{head}:{rel}"], check=False)
-        if result.returncode:
-            return None
-        receipt = json.loads(result.stdout)
-        if receipt.get("batch_digest") != expected_digest:
-            raise MemoryError("BATCH_CHANGED", "Committed approval digest differs.")
+        present = result.returncode == 0
         commit = (
-            run_git(self.store, ["log", "-1", "--format=%H", head, "--", rel])
+            run_git(
+                self.store,
+                [
+                    "log",
+                    "-1",
+                    "--format=%H",
+                    *([] if present else ["--diff-filter=A"]),
+                    head,
+                    "--",
+                    rel,
+                ],
+            )
             .stdout.decode()
             .strip()
         )
+        if not present:
+            if not commit:
+                if git_head(self.store) != head:
+                    raise MemoryError("HEAD_CHANGED", "Canonical HEAD moved during proof lookup.")
+                return None
+            result = run_git(self.store, ["show", f"{commit}:{rel}"])
+        receipt = json.loads(result.stdout)
+        if (
+            not isinstance(receipt, dict)
+            or receipt.get("type") != "memorygraph-simple-approval"
+            or receipt.get("batch_id") != batch_id
+            or not isinstance(receipt.get("records"), list)
+            or not receipt["records"]
+        ):
+            raise MemoryError("APPROVAL_PROOF_INVALID", "Committed approval identity is invalid.")
+        if receipt.get("batch_digest") != expected_digest:
+            raise MemoryError("BATCH_CHANGED", "Committed approval digest differs.")
         active_ids = []
         indexes = {}
-        for record in receipt["records"]:
+        for record in receipt["records"] if present else []:
             root = (
                 "global"
                 if record["scope"] == "global"
@@ -464,8 +511,12 @@ class SimpleMemory:
                 indexes[root] = set(json.loads(raw.stdout)["entries"].values())
             if record["id"] in indexes[root]:
                 active_ids.append(record["id"])
+        if git_head(self.store) != head:
+            raise MemoryError("HEAD_CHANGED", "Canonical HEAD moved during proof lookup.")
         return {
-            "status": "ACTIVE_COMMITTED"
+            "status": "COMMIT_NOT_CURRENT"
+            if not present
+            else "ACTIVE_COMMITTED"
             if len(active_ids) == len(receipt["records"])
             else "COMMITTED_NOT_ACTIVE",
             "batch_id": batch_id,
@@ -476,6 +527,7 @@ class SimpleMemory:
             "checked_head": head,
             "committed_by_agent": receipt["committed_by_agent"],
             "recovered_from_git": True,
+            "recovered_from_history": not present,
         }
 
     def status(self, cwd: Path) -> dict[str, object]:
@@ -512,6 +564,7 @@ class SimpleMemory:
         project_id = safe_id(project_id, "project id")
         title = clean_text(title, "project title", 160)
         with StoreLock(self.store):
+            ensure_queue_ready(self.store, canonical_only=True)
             ensure_clean(self.store)
             catalog = self._catalog()
             projects = catalog.get("projects")
@@ -687,6 +740,7 @@ class SimpleMemory:
 
     def propose(self, raw: dict[str, object], cwd: Path) -> dict[str, object]:
         with StoreLock(self.store):
+            ensure_queue_ready(self.store)
             scope = str(raw.get("scope") or "")
             project_id, _project = self._project_for_cwd(cwd)
             if scope == "global":
@@ -786,6 +840,7 @@ class SimpleMemory:
     ) -> dict[str, object]:
         with StoreLock(self.store):
             head = git_head(self.store)
+            ensure_queue_ready(self.store)
             if expected_head is not None and head != expected_head:
                 raise MemoryError("HEAD_CHANGED", "Memory HEAD moved while preparing review.")
             batch_id = (
@@ -903,6 +958,36 @@ class SimpleMemory:
             else:
                 atomic_bytes(path, data, 0o600)
 
+    @contextmanager
+    def canonical_transaction(self, paths: list[Path]):
+        """Rollback only declared canonical files if no commit occurred. Caller holds store lock."""
+        ensure_clean(self.store)
+        paths = list(dict.fromkeys(paths))
+        relative = []
+        for path in paths:
+            try:
+                rel = path.relative_to(self.store)
+            except ValueError as error:
+                raise MemoryError(
+                    "TRANSACTION_PATH_INVALID", "Path is outside this store."
+                ) from error
+            if not rel.parts or rel.parts[0] in {".git", ".queue"} or ".." in rel.parts:
+                raise MemoryError("TRANSACTION_PATH_INVALID", "Only canonical files are allowed.")
+            if any(p.is_symlink() for p in (path, *path.parents)):
+                raise MemoryError("TRANSACTION_PATH_INVALID", "Transaction symlinks are rejected.")
+            relative.append(rel.as_posix())
+        head = git_head(self.store)
+        backup = self._backup_paths(paths)
+        try:
+            yield
+        except Exception:
+            # A post-commit error cannot authorize rewriting committed state.
+            if git_head(self.store) == head:
+                self._restore_paths(backup)
+                if relative:
+                    run_git(self.store, ["restore", "--staged", "--", *relative], check=False)
+            raise
+
     def approve(
         self,
         batch_id: str,
@@ -914,6 +999,7 @@ class SimpleMemory:
         automatic_policy_digest: str | None = None,
     ) -> dict[str, object]:
         with StoreLock(self.store):
+            ensure_queue_ready(self.store)
             ensure_clean(self.store)
             batch = self._load_batch(batch_id)
             if batch.get("status") != "pending" or batch.get("batch_digest") != expected_digest:
@@ -1055,8 +1141,7 @@ class SimpleMemory:
                         )
             approval_path = self.store / "approvals" / f"{batch_id}.json"
             touched.append(approval_path)
-            backup = self._backup_paths(list(dict.fromkeys(touched)))
-            try:
+            with self.canonical_transaction(touched):
                 records: list[dict[str, object]] = []
                 written_roots: set[Path] = set()
                 for record, path, index, nodes, root in prepared:
@@ -1093,10 +1178,6 @@ class SimpleMemory:
                     ["commit", "-q", "-m", f"memory: approve {batch_id} by {committing_agent}"],
                 )
                 committed_head = git_head(self.store)
-            except Exception:
-                self._restore_paths(backup)
-                run_git(self.store, ["restore", "--staged", "--worktree", "."], check=False)
-                raise
             batch["status"] = "committed"
             batch["committed_head"] = committed_head
             batch["committed_at"] = iso()
@@ -1603,6 +1684,7 @@ class SimpleMemory:
         self, commit: str, confirmation_text: str, backup_root: Path | None = None
     ) -> dict[str, object]:
         with StoreLock(self.store):
+            ensure_queue_ready(self.store, canonical_only=True)
             ensure_clean(self.store)
             if not COMMIT_RE.fullmatch(commit):
                 raise MemoryError(

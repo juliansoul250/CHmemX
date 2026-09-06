@@ -141,6 +141,8 @@ class QueueState:
             if raw_event is not None and d["event_files"] < limits["max_events"]:
                 d["event_files"] += 1
                 d["event_sequence"] += 1
+                prior_uncertainty = d.get("event_write_incomplete", False)
+                d["event_write_incomplete"] = True
                 core.atomic_json(
                     self.path, d, 0o600
                 )  # reserve before writing; crash cannot reuse an audit filename
@@ -149,6 +151,7 @@ class QueueState:
                     raw_event,
                     0o600,
                 )
+                d["event_write_incomplete"] = prior_uncertainty
             else:
                 d["suppressed_events"] += 1
 
@@ -161,6 +164,17 @@ class QueueState:
             "window_unit": "last five distinct logical uploads",
             "recent": s["recent"],
         }
+
+    def event_accounting(self):
+        """Cheap health signal, not a filesystem audit or automatic counter repair."""
+        with self.locked() as d:
+            return {
+                "status": "RECONCILIATION_RECOMMENDED"
+                if d.get("event_write_incomplete")
+                else "NO_INTERRUPTED_WRITE_RECORDED",
+                "reserved_files": d["event_files"],
+                "verification": "metadata-only; explicit maintenance compares physical files",
+            }
 
     def reserve(self, upload_id, digest, agent, context=None):
         limits = self.limits()
@@ -206,11 +220,7 @@ class QueueState:
             return d["batches"].get(batch_id)
 
     def assert_ready(self):
-        if (self.root / "maintenance/active.json").exists():
-            raise core.MemoryError(
-                "MAINTENANCE_RECOVERY_REQUIRED",
-                "Finish or roll back the interrupted queue transaction.",
-            )
+        core.ensure_queue_ready(self.store)
 
     def exists(self, upload_id):
         core.safe_id(upload_id, "upload id")
@@ -234,11 +244,39 @@ class QueueState:
             if core.sha256_bytes(raw) != receipt["archive_hash"]:
                 raise core.MemoryError("ARCHIVE_CHANGED", "Queue archive failed its byte seal.")
             try:
-                _, files = queue_archive.unpack(raw)
+                metadata, files = queue_archive.unpack(raw)
                 job = json.loads(files[f"chmemx/uploads/{upload_id}.json"])
             except (ValueError, KeyError, OSError) as error:
                 raise core.MemoryError("ARCHIVE_INVALID", "Queue archive is unreadable.") from error
-            return self.checked_job(job, upload_id, "archive")
+            job = self.checked_job(job, upload_id, "archive")
+            if metadata.get("upload_id") != upload_id or metadata.get("kind") != "upload":
+                raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Archive owner differs.")
+            for field in (
+                "upload_id",
+                "input_digest",
+                "source_agent",
+                "identity_version",
+                "context",
+                "batch_id",
+                "batch_digest",
+            ):
+                if job.get(field) != receipt.get(field):
+                    raise core.MemoryError(
+                        "ARCHIVE_RECEIPT_MISMATCH",
+                        "Archive and receipt identity differ.",
+                        field=field,
+                    )
+            if not job.get("context"):
+                candidate = job.get("candidate", {})
+                if receipt.get("legacy_scope") != candidate.get("scope") or receipt.get(
+                    "legacy_project_root"
+                ) != candidate.get("source", {}).get("project_root"):
+                    raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Legacy context differs.")
+            # Source bytes stay immutable; only the bound lifecycle receipt supplies proof.
+            for field in ("status", "commit", "record_ids", "closed_at", "reason", "archived_at"):
+                if field in receipt:
+                    job[field] = receipt[field]
+            return job
         return self.checked_job(receipt, upload_id, "receipt")
 
     @staticmethod

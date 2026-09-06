@@ -140,7 +140,7 @@ class Service:
             "source_statistics": self.source_statistics()
             if transaction is None
             else {"status": "TEMPORARILY_UNAVAILABLE"},
-            "queue_health": {"status": "READY"}
+            "queue_health": {"status": "READY", "event_accounting": self.queue.event_accounting()}
             if transaction is None
             else {
                 "status": "MAINTENANCE_RECOVERY_REQUIRED",
@@ -874,6 +874,7 @@ class Service:
 
     def revoke_apply(self, source_agent: str, expected_digest: str):
         with core.StoreLock(self.store):
+            core.ensure_queue_ready(self.store, canonical_only=True)
             plan = self.revoke_plan(source_agent)
             if plan["digest"] != expected_digest:
                 raise ValueError("REVOCATION_PLAN_CHANGED")
@@ -887,9 +888,8 @@ class Service:
                 touched.update([root / "active-index.json", root / "nodes.json"])
             receipt_path = self.store / "tombstones" / f"source-{uuid.uuid4().hex}.json"
             touched.add(receipt_path)
-            old = self.runtime._backup_paths(list(touched))
             relative = [str(p.relative_to(self.store)) for p in touched]
-            try:
+            with self.runtime.canonical_transaction(list(touched)):
                 targets = {r["id"] for r in plan["records"]}
                 for path in touched:
                     if path.name == "active-index.json":
@@ -921,10 +921,6 @@ class Service:
                 core.run_git(
                     self.store, ["commit", "-qm", f"memory: deactivate source {source_agent}"]
                 )
-            except Exception:
-                self.runtime._restore_paths(old)
-                core.run_git(self.store, ["restore", "--staged", "--", *relative], check=False)
-                raise
         return {
             "status": "SOURCE_DEACTIVATED",
             "source_agent": source_agent,
@@ -939,6 +935,7 @@ class Service:
         if len(base64.b64decode(public_key, validate=True)) != 32:
             raise ValueError("ED25519_PUBLIC_KEY_REQUIRED")
         with core.StoreLock(self.store):
+            core.ensure_queue_ready(self.store, canonical_only=True)
             core.ensure_clean(self.store)
             path = self.store / "sources.json"
             registry = core.load_json(path) if path.exists() else {"agents": {}}
