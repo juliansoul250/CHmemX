@@ -260,7 +260,12 @@ class Service:
             result = self.runtime.approval_result(
                 job["batch_id"],
                 job["batch_digest"],
-                upload_id=job["upload_id"] if job.get("identity_version") == 2 else None,
+                upload_id=job["upload_id"]
+                if (
+                    job.get("identity_version") == 2
+                    or job.get("approval_upload_id") == job["upload_id"]
+                )
+                else None,
             )
             if result:
                 job.update(result)
@@ -328,15 +333,10 @@ class Service:
             return self._summary(self._sync_job(job))
 
     def _prepare(self, job, agent):
+        self._require_review_context(job)
         self._sync_job(job)
         if job["status"] in TERMINAL:
             return self._summary(job)
-        context = self._context(job["candidate"]["scope"])
-        if not self._context_matches(job, context):
-            raise core.MemoryError(
-                "UPLOAD_CONTEXT_MISMATCH",
-                "Review requires the upload's registered project context.",
-            )
         _, catalog_error = self._key_conflicts(
             job["candidate"]["key"], job["candidate"]["scope"], job["candidate"]["class"]
         )
@@ -455,6 +455,24 @@ class Service:
         return str(Path(candidate.get("source", {}).get("project_root", "")).resolve()) == str(
             core.git_toplevel(self.cwd)
         )
+
+    def _require_review_context(self, job):
+        declared = job.get("context") or {}
+        candidate = job.get("candidate") or {}
+        if not isinstance(declared, dict) or not isinstance(candidate, dict):
+            raise core.MemoryError(
+                "UPLOAD_CONTEXT_UNVERIFIED", "Stored review context is malformed."
+            )
+        scope = declared.get("scope") or candidate.get("scope") or job.get("legacy_scope")
+        if scope not in {"global", "project"}:
+            raise core.MemoryError(
+                "UPLOAD_CONTEXT_UNVERIFIED", "Stored review has no verifiable scope."
+            )
+        if not self._context_matches(job, self._context(scope)):
+            raise core.MemoryError(
+                "UPLOAD_CONTEXT_MISMATCH",
+                "Review requires the upload's registered project context.",
+            )
 
     def _existing(self, uid, legacy_uid, context, input_digest, source_data=None):
         for identifier in dict.fromkeys([uid, legacy_uid]):
@@ -758,6 +776,7 @@ class Service:
         with core.StoreLock(self.state / "locks/operation"):
             self.queue.assert_ready()
             job = self.queue.load_job(upload_id)
+            self._require_review_context(job)
             self._sync_job(job)
             if job["status"] in TERMINAL:
                 return self._summary(job)
@@ -945,10 +964,11 @@ class Service:
             registry = core.load_json(path) if path.exists() else {"agents": {}}
             if agent in registry["agents"]:
                 raise ValueError("SOURCE_ALREADY_REGISTERED")
-            registry["agents"][agent] = {"public_key": public_key, "revoked": False}
-            core.atomic_json(path, registry, 0o600)
-            core.run_git(self.store, ["add", "sources.json"])
-            core.run_git(self.store, ["commit", "-qm", f"memory: register source key {agent}"])
+            with self.runtime.canonical_transaction([path]):
+                registry["agents"][agent] = {"public_key": public_key, "revoked": False}
+                core.atomic_json(path, registry, 0o600)
+                core.run_git(self.store, ["add", "sources.json"])
+                core.run_git(self.store, ["commit", "-qm", f"memory: register source key {agent}"])
         return {
             "status": "SOURCE_KEY_REGISTERED",
             "agent": agent,

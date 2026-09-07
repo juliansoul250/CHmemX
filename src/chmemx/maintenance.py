@@ -103,6 +103,7 @@ class Maintenance:
                             "upload_id",
                             "input_digest",
                             "identity_version",
+                            "approval_upload_id",
                             "context",
                             "source_agent",
                             "status",
@@ -376,7 +377,12 @@ class Maintenance:
                     result["batch_id"],
                     result["batch_digest"],
                     need_commit,
-                    upload_id=result["upload_id"] if result.get("identity_version") == 2 else None,
+                    upload_id=result["upload_id"]
+                    if (
+                        result.get("identity_version") == 2
+                        or result.get("approval_upload_id") == result["upload_id"]
+                    )
+                    else None,
                 )
                 if committed:
                     result.update(committed)
@@ -636,6 +642,7 @@ class Maintenance:
                     "input_digest",
                     "context",
                     "identity_version",
+                    "approval_upload_id",
                     "source_agent",
                     "status",
                     "batch_id",
@@ -704,14 +711,9 @@ class Maintenance:
                 if receipt not in files:
                     recovered = {}
                     if meta.get("batch_id"):
-                        proof = self.canonical_json(
-                            f"approvals/{core.safe_id(meta['batch_id'], 'batch id')}.json"
+                        recovered = self.proof_result(
+                            meta["batch_id"], need_commit=True, upload_id=uid
                         )
-                        if proof is not None:
-                            if any(r.get("upload_id") == uid for r in proof.get("records", [])):
-                                recovered = self.proof_result(
-                                    meta["batch_id"], proof["batch_digest"], need_commit=True
-                                )
                     changes[receipt] = json_bytes(
                         {
                             **meta,
@@ -726,7 +728,8 @@ class Maintenance:
                         value = json.loads(changes[receipt])
                         value.update(
                             recovered,
-                            reason="Recovered from canonical approval, not inferred from missing bytes.",
+                            approval_upload_id=uid,
+                            reason="Lifecycle proved by current or historical approval; original payload remains missing.",
                         )
                         changes[receipt] = json_bytes(value)
             for uid in plan["unindexed_upload_files"]:

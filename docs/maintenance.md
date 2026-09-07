@@ -77,6 +77,10 @@ proof, it records `UPLOAD_DATA_MISSING`, retains the request fingerprint and rel
 reservation. It never invents content or silently treats the retry as new. Restore missing input
 from a verified backup, or explicitly close it if the operator chooses to discard that unresolved job.
 
+Reverted approvals can be proved through current Git ancestry even when hot-upload writeback failed.
+The recovered receipt keeps `COMMIT_NOT_CURRENT` and its upload-ID binding, with
+`payload_available=false`. Historical proof never supplies the missing body or reactivates the record.
+
 Do not manually edit `state.json` or remove upload/receipt files to clean the queue. Legacy requests
 without enough context cannot be safely rebound; use a new request ID or recover their input.
 

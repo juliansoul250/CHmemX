@@ -19,14 +19,14 @@ nodes, requests owner approval, and commits permanent memory atomically to Git.
 > CHmemX is designed to prevent normal workflow mistakes and memory conflicts. It is not an OS
 > security boundary against a malicious process running as the same user.
 
-## Start with v0.5.1
+## Start with v0.5.2
 
 CHmemX now exposes three stdio MCP tools: `start`, `recall`, and `upload`.
 No server port, database service, API key, or embedding download is required for the default setup.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.1'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.2'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
@@ -35,13 +35,24 @@ Use an existing Git project and a new, separate memory directory. Add the
 [stdio client configuration](docs/mcp.md), then call `start` at task start and `upload` at task end.
 The index is rebuilt lazily after approved commits; source agents do not manage index files.
 
-Working alone? Add `--mode personal` to `init`. Only configured sources can auto-save low-risk
-new `preference.*` preferences; exact duplicates create no new commit. Conflicts, sensitive
-content, and a deterministic 10% sample still require review. This is an explicit relaxation of
-the write policy, not the same security guarantee with fewer clicks. Existing stores keep
-their policy. Nothing enables personal mode on upgrade.
+### Choose a write policy
+
+| Decision | Team (default) | Personal (explicit `init --mode personal`) |
+|---|---|---|
+| Who prepares memory? | Source agents upload Pending; the curator reviews. | Same upload checks; only configured sources qualify for automatic saving. |
+| What can be saved automatically? | No new Active memory. | Low-risk new `preference.*` preferences, except a deterministic 10% review sample by default. |
+| What always needs review? | Every new or replacement batch, with exact Owner confirmation. | Conflicts, replacements, other facts and high-risk content; reviewed batches use exact Owner confirmation. |
+| Exact duplicates | No new Active record or Git commit. | Same. |
+| Evidence and recall | Git approval history; Pending and quarantine never recalled. | Same, with automatic policy decisions recorded. |
+| Upgrade behavior | Existing policy stays unchanged. | Never enabled by upgrading. |
+
+Personal mode deliberately relaxes the write policy. It is useful for one person's routine
+preferences, not a substitute for Team review. Agent names identify workflow sources; optional
+signatures establish key provenance, not truth or OS-level authorization. Neither mode prevents
+a malicious process with the same user's filesystem access from editing the store.
 
 - [MCP configuration and tool arguments](docs/mcp.md)
+- [v0.5.2 registration, review and source-validity fixes](docs/v0.5.2.md)
 - [v0.5.1 recovery fixes and upgrade notes](docs/v0.5.1.md)
 - [v0.5 upload lifecycle and upgrade notes](docs/v0.5.md)
 - [Queue maintenance and recovery](docs/maintenance.md)
@@ -68,7 +79,8 @@ CHmemX separates the responsibilities:
 [![CHmemX v0.3 architecture](docs/assets/v03-en.png)](docs/v03-en.html)
 
 Open the [v0.3 interactive map](docs/v03-en.html). The [earlier full team pipeline](docs/architecture.html)
-is retained as versioned design history. Current behavior is defined by [v0.5](docs/v0.5.md).
+is retained as versioned design history. See [v0.5](docs/v0.5.md) for the lifecycle and
+[v0.5.2](docs/v0.5.2.md) for the latest fixes.
 
 ## Key properties
 
@@ -83,6 +95,10 @@ is retained as versioned design history. Current behavior is defined by [v0.5](d
 - Runtime code uses only Python's standard library and Git.
 
 ## Advanced team workflow (existing CLI remains supported)
+
+The following commands use the legacy v1/v2 pointer. New integrations should use the MCP tools
+or `chmemx recall`, which run v3 retrieval and project-source validity checks. Keep the two index
+formats separate; running the legacy optimizer does not optimize the MCP index.
 
 ### 1. Read shared memory
 
@@ -215,9 +231,20 @@ python3 runtime/simple_memory.py init \
 Initialization is a local mutation. Choose the store path and first registered project before
 running it. The source project is not modified.
 
-## Content-grid vector pointer
+## Retrieval engines and index formats
 
-The default vectorizer is deterministic and offline:
+| Entry point | Retrieval | Evaluation boundary |
+|---|---|---|
+| MCP `start` / `recall`, CLI `chmemx recall` | `retrieval_v3.py`: BM25 and sparse lexical ranking; optional local ONNX embeddings with conservative fusion. | v3 regression and held-out suites; current project-source checks. |
+| `scripts/vector_memory.py` | Legacy v1/v2 hashed lexical sparse vectors, cosine scores and graph routing. | Legacy golden suite and generated Active coverage; no v3 source-freshness check. |
+
+The word *vector* describes a real sparse-vector representation. It does not mean every backend
+uses neural embeddings, or that CHmemX runs a vector database. Default retrieval needs no model
+download. The [ONNX backend](docs/semantic.md) is optional and is used through v3, not the legacy script.
+
+### Legacy pointer details
+
+The v1/v2 vectorizer is deterministic and offline:
 
 - NFKC normalization and case folding;
 - word tokens plus Chinese 2/3-character fragments;
@@ -228,11 +255,8 @@ The default vectorizer is deterministic and offline:
 - one-hop graph expansion;
 - bounded scoring-profile optimization and dynamic score thresholding.
 
-The default is a lexical sparse vector, not a neural semantic embedding. v0.3 adds an
-[optional local ONNX backend](docs/semantic.md) with conservative fusion and separate evaluation.
-
-Recall quality is versioned and testable. Maintain a redacted golden-query suite based on durable
-memory topics, then publish an index through the quality gate:
+For an existing v1/v2 installation, maintain a redacted golden-query suite based on durable
+memory topics, then publish its index through the legacy quality gate:
 
 ```bash
 python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
@@ -246,6 +270,8 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
 
 The optimizer tries a small deterministic set of scoring profiles and publishes only a profile that
 passes the suite plus generated Active-memory coverage. It does not collect real user queries.
+It adjusts lexical scoring, not embedding weights. The filename, commands and v1/v2 formats remain
+supported for compatibility; do not pass a v3 index to them.
 Start from [`examples/recall-evaluation.example.json`](examples/recall-evaluation.example.json).
 
 ## Repository layout
@@ -254,7 +280,8 @@ Start from [`examples/recall-evaluation.example.json`](examples/recall-evaluatio
 runtime/simple_memory.py           canonical Git memory interface
 scripts/assemble_inventory.py      validate one source upload
 scripts/curate_uploads.py          dedupe and compare with Active
-scripts/vector_memory.py           build/query/route the vector pointer
+scripts/vector_memory.py           legacy v1/v2 lexical vector pointer
+scripts/retrieval_v3.py            current MCP/CLI retrieval
 schemas/agent-export-v1.schema.json
 schemas/recall-evaluation-v1.schema.json
 skills/memory-graph/SKILL.md       portable shared Skill

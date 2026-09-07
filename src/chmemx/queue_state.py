@@ -210,6 +210,8 @@ class QueueState:
                     "batch_id",
                     "candidate_id",
                     "context",
+                    "identity_version",
+                    "approval_upload_id",
                 )
             }
             if job.get("batch_id"):
@@ -277,7 +279,15 @@ class QueueState:
             ) != candidate.get("source", {}).get("project_root"):
                 raise core.MemoryError("ARCHIVE_RECEIPT_MISMATCH", "Legacy context differs.")
         # Source bytes stay immutable; only the bound lifecycle receipt supplies proof.
-        for field in ("status", "commit", "record_ids", "closed_at", "reason", "archived_at"):
+        for field in (
+            "status",
+            "commit",
+            "record_ids",
+            "closed_at",
+            "reason",
+            "archived_at",
+            "approval_upload_id",
+        ):
             if field in receipt:
                 job[field] = receipt[field]
         return job
@@ -293,6 +303,10 @@ class QueueState:
                 "UPLOAD_STATE_INVALID", "Stored upload identity does not match its locator."
             )
         core.safe_id(value["source_agent"], "source agent")
+        if value.get("approval_upload_id") not in (None, upload_id):
+            raise core.MemoryError(
+                "UPLOAD_STATE_INVALID", "Recovered approval binding differs from upload."
+            )
         return {**value, "_storage": storage}
 
     def save_receipt(self, job):
@@ -302,6 +316,7 @@ class QueueState:
             "source_agent",
             "context",
             "identity_version",
+            "approval_upload_id",
             "status",
             "created_at",
             "closed_at",

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.2 (2026-09-07)
+
+- Roll back failed project/source registration without retaining staged changes or deleting unrelated files.
+- Reject foreign-project review before changing the upload or its original sealed batch.
+- Recognize Git-declared text line endings without executing content filters or hiding real source changes.
+- Recover missing-upload lifecycle proof from Git ancestry, retaining exact upload binding and absent-body status.
+- Clarify Team/Personal write policies and legacy lexical versus current MCP/v3 retrieval in both READMEs.
+- Preserve existing policy, index formats, ranking, maintenance locks and client permissions.
+
+See [upgrade notes](docs/v0.5.2.md) or [中文说明](docs/zh-CN/v0.5.2.md).
+
 ## 0.5.1 (2026-09-06)
 
 - Finish completed maintenance cleanup after a legitimate Git HEAD change, retaining byte checks.

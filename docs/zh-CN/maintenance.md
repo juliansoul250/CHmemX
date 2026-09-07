@@ -58,6 +58,8 @@ chmemx --store /absolute/private-memory --cwd /absolute/git-project \
 
 `maintenance-plan --action reconcile` 可以登记仍存在的上传文件，或从 Git 找回缺失上传的已提交结果。若正文和提交证据都不存在，就记录 `UPLOAD_DATA_MISSING`，保留请求指纹并释放孤立占位，不编造内容，也不静默重新接收同一请求。可以恢复原输入，或由操作者明确关闭这条无法恢复的任务。
 
+即使热上传的提交后回写失败，当前 Git 祖先历史仍可能证明审批已经回滚。对账会保留 `COMMIT_NOT_CURRENT` 及对应上传 ID，并标记 `payload_available=false`；历史证明不会补出丢失正文，也不会重新激活记录。
+
 不要手改 `state.json` 或直接删除上传/回执来清理。无法核实来源的旧请求，需要恢复原输入或使用新请求编号。
 
 `status` 的 `queue_health.event_accounting` 会报告事件计数情况。`RECONCILIATION_RECOMMENDED` 表示事件可能在占位与写入完成之间中断；维护计划会比较占位数和实际文件数。明确执行维护后可修正计数，但不复用事件编号。`NO_INTERRUPTED_WRITE_RECORDED` 仅表示没有记录到中断，不等于做过全盘审计。

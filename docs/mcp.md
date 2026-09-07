@@ -2,7 +2,7 @@
 
 [简体中文](zh-CN/mcp.md) · [Home](../README.md)
 
-Install the [versioned package](../README.md#start-with-v05), then initialize a new store.
+Install the [versioned package](../README.md), then initialize a new store.
 Keep the store outside this public source repository. Python 3.10+ and Git are required;
 no third-party Python package is needed for the base server. macOS is locally tested and
 Linux, macOS and Windows now have CI jobs. Consult the release commit's actual workflow results.

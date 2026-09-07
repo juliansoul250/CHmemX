@@ -581,21 +581,33 @@ class SimpleMemory:
             ):
                 raise MemoryError("PROJECT_EXISTS", "Project id or root is already registered.")
             project_scope = self.store / "projects" / project_id
-            project_scope.mkdir(parents=True)
-            (project_scope / "active").mkdir()
-            projects[project_id] = {
-                "project_id": project_id,
-                "title": title,
-                "root": str(project_root),
-            }
-            atomic_json(project_scope / "binding.json", projects[project_id], 0o600)
-            atomic_json(
-                project_scope / "active-index.json", {"schema_version": 1, "entries": {}}, 0o600
-            )
-            atomic_json(project_scope / "nodes.json", {"schema_version": 1, "nodes": {}}, 0o600)
-            atomic_json(self.store / "catalog.json", catalog, 0o600)
-            run_git(self.store, ["add", "catalog.json", str(project_scope.relative_to(self.store))])
-            run_git(self.store, ["commit", "-q", "-m", f"memory: register project {project_id}"])
+            paths = [
+                self.store / "catalog.json",
+                project_scope / "binding.json",
+                project_scope / "active-index.json",
+                project_scope / "nodes.json",
+            ]
+            with self.canonical_transaction(
+                paths, create_directories=[project_scope, project_scope / "active"]
+            ):
+                projects[project_id] = {
+                    "project_id": project_id,
+                    "title": title,
+                    "root": str(project_root),
+                }
+                atomic_json(project_scope / "binding.json", projects[project_id], 0o600)
+                atomic_json(
+                    project_scope / "active-index.json", {"schema_version": 1, "entries": {}}, 0o600
+                )
+                atomic_json(project_scope / "nodes.json", {"schema_version": 1, "nodes": {}}, 0o600)
+                atomic_json(self.store / "catalog.json", catalog, 0o600)
+                run_git(
+                    self.store,
+                    ["add", "--", *[p.relative_to(self.store).as_posix() for p in paths]],
+                )
+                run_git(
+                    self.store, ["commit", "-q", "-m", f"memory: register project {project_id}"]
+                )
             return {
                 "status": "PROJECT_REGISTERED",
                 "project_id": project_id,
@@ -964,12 +976,15 @@ class SimpleMemory:
                 atomic_bytes(path, data, 0o600)
 
     @contextmanager
-    def canonical_transaction(self, paths: list[Path]):
-        """Rollback only declared canonical files if no commit occurred. Caller holds store lock."""
+    def canonical_transaction(
+        self, paths: list[Path], *, create_directories: list[Path] | None = None
+    ):
+        """Own new directories and roll back declared files before commit; caller holds store lock."""
         ensure_clean(self.store)
         paths = list(dict.fromkeys(paths))
+        directories = sorted(set(create_directories or []), key=lambda p: len(p.parts))
         relative = []
-        for path in paths:
+        for path in [*paths, *directories]:
             try:
                 rel = path.relative_to(self.store)
             except ValueError as error:
@@ -980,17 +995,47 @@ class SimpleMemory:
                 raise MemoryError("TRANSACTION_PATH_INVALID", "Only canonical files are allowed.")
             if any(p.is_symlink() for p in (path, *path.parents)):
                 raise MemoryError("TRANSACTION_PATH_INVALID", "Transaction symlinks are rejected.")
-            relative.append(rel.as_posix())
+            if path in directories and path.exists():
+                raise MemoryError(
+                    "TRANSACTION_DIRECTORY_EXISTS",
+                    "Registration directory already exists.",
+                    path=rel.as_posix(),
+                )
+            if path in paths:
+                relative.append(rel.as_posix())
         head = git_head(self.store)
         backup = self._backup_paths(paths)
+        created = []
+        entered = False
         try:
+            for directory in directories:
+                directory.mkdir()
+                created.append(directory)
+            entered = True
             yield
-        except Exception:
+        except Exception as error:
             # A post-commit error cannot authorize rewriting committed state.
             if git_head(self.store) == head:
-                self._restore_paths(backup)
-                if relative:
-                    run_git(self.store, ["restore", "--staged", "--", *relative], check=False)
+                if entered:
+                    self._restore_paths(backup)
+                if entered and relative:
+                    # Path-limited reset restores the index even when some declared files
+                    # never reached it. No --hard, worktree reset, or unrelated path.
+                    run_git(self.store, ["reset", "--quiet", head, "--", *relative])
+                remaining = []
+                for directory in reversed(created):
+                    try:
+                        directory.rmdir()
+                    except FileNotFoundError:
+                        pass
+                    except OSError:
+                        remaining.append(directory.relative_to(self.store).as_posix())
+                if remaining:
+                    raise MemoryError(
+                        "ROLLBACK_DIRECTORY_REMAINS",
+                        "Nonempty or inaccessible new directories were preserved.",
+                        paths=remaining,
+                    ) from error
             raise
 
     def approve(

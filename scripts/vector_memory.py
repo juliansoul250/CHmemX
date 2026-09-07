@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Build, evaluate, optimize, and query the full offline Memory Graph pointer.
+"""Legacy v1/v2 lexical sparse-vector pointer; retained for existing CLI users.
 
 The index contains sparse vectors and record paths, never record bodies. Recall
 verifies the Memory Graph Git HEAD, follows content cells and graph relations,
 then reads only accepted Active records from the canonical store. Optimization
 publishes only after generated Active coverage and a redacted golden suite pass.
+
+Vectors are hashed lexical features, not neural embeddings. This optimizer tunes
+bounded scoring profiles, not an embedding model. Current MCP/CLI retrieval uses
+retrieval_v3.py, including its source-freshness checks and optional ONNX backend;
+those features are not enabled by calling this script. Index formats are separate.
 """
 
 from __future__ import annotations

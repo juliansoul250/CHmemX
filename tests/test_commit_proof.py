@@ -204,6 +204,48 @@ class CommitProofAcceptance(unittest.TestCase):
             self.service.upload_status(uid)
         self.assertEqual("APPROVAL_UPLOAD_MISMATCH", err.exception.code)
 
+    def test_missing_reverted_upload_reconciliation_preserves_history_proof(self):
+        uploaded, review, commit = self.approved_without_writeback()
+        uid = uploaded["upload_id"]
+        self.service.runtime.revert(commit, f"确认回滚记忆提交 {commit}")
+        proof = self.service.runtime.approval_result(
+            review["batch_id"], review["batch_digest"], upload_id=uid
+        )
+        self.assertEqual("COMMIT_NOT_CURRENT", proof["status"])
+        (self.service.state / "uploads" / f"{uid}.json").unlink()
+        self.maintain("reconcile")
+        result = self.service.upload_status(uid)
+        self.assertEqual("COMMIT_NOT_CURRENT", result["status"])
+        self.assertFalse(result["payload_available"])
+        self.assertEqual(commit, result["commit"])
+        self.assertEqual("COMMIT_NOT_CURRENT", self.service.review(uid)["status"])
+
+    def test_recovered_legacy_queue_metadata_retains_exact_approval_binding(self):
+        uploaded, _, commit = self.approved_without_writeback()
+        uid = uploaded["upload_id"]
+        self.service.runtime.revert(commit, f"确认回滚记忆提交 {commit}")
+        with self.service.queue.locked() as state:
+            state["uploads"][uid].pop("identity_version", None)
+        (self.service.state / "uploads" / f"{uid}.json").unlink()
+        self.maintain("reconcile")
+        receipt_path = self.service.state / "receipts" / f"{uid}.json"
+        recovered = core.load_json(receipt_path)
+        self.assertEqual(uid, recovered["approval_upload_id"])
+        self.assertEqual("COMMIT_NOT_CURRENT", self.service.upload_status(uid)["status"])
+
+        other = self.service.upload(**self.preference(key="preference.editor.other"))
+        review = self.service.review(other["upload_id"])
+        self.service.approve(
+            review["batch_id"], review["batch_digest"], review["required_confirmation"]
+        )
+        core.atomic_json(
+            receipt_path,
+            {**recovered, "batch_id": review["batch_id"], "batch_digest": review["batch_digest"]},
+        )
+        with self.assertRaises(core.MemoryError) as err:
+            self.service.upload_status(uid)
+        self.assertEqual("APPROVAL_UPLOAD_MISMATCH", err.exception.code)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,22 +16,34 @@ CHmemX 让 Codex、Claude Code、OpenCode、Pi、ZCode 等工具拥有各自的�
 
 > CHmemX 用于减少正常工作流程中的误写、重复和记忆冲突。它不是抵抗同一操作系统用户下恶意进程的安全边界。
 
-## v0.5.1：接入与使用
+## v0.5.2：接入与使用
 
 现在可以通过 stdio MCP 调用 `start`、`recall`、`upload`。默认不需要端口、数据库服务、API Key 或向量模型。
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.1'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.2'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
 
 项目目录必须是现有 Git 根；记忆目录使用新建的独立位置。然后添加 [MCP 客户端配置](docs/zh-CN/mcp.md)。任务开始查记忆，结束上传；批准后的索引重建由入口处理。
 
-个人使用可以在 `init` 后加 `--mode personal`：只允许配置过的来源自动保存低风险 `preference.*` 偏好新增项，精确重复不再提交。其他事实、冲突、敏感内容和按摘要确定的 10% 抽样仍需审查。这是主动放宽写入政策，不是“安全边界不变”。升级不会替现有仓库开启它。
+### 选择写入政策
+
+| 决策 | Team（默认） | Personal（显式 `init --mode personal`） |
+|---|---|---|
+| 谁准备记忆？ | 来源 Agent 上传 Pending，策展者审查。 | 保留上传检查；仅配置过的来源可自动保存。 |
+| 什么可以自动保存？ | 不自动新增 Active。 | 低风险 `preference.*` 偏好新增项；默认按摘要确定的 10% 样本仍需审查。 |
+| 什么必须审查？ | 所有新增、替代批次，均需 Owner 精确确认。 | 冲突、替代、其他事实和高风险内容；进入审阅的批次同样需 Owner 精确确认。 |
+| 精确重复 | 不新增 Active，也不产生 Git 提交。 | 相同。 |
+| 证据与召回 | Git 保留审批历史；Pending、隔离内容不召回。 | 相同；自动写入也记录政策决策。 |
+| 升级影响 | 保留原政策。 | 升级不会自动开启。 |
+
+Personal 主动放宽了写入政策，适合个人日常偏好，不能代替 Team 审阅。Agent 名称表示流程来源；可选签名证明内容来自哪个密钥，不证明内容正确，也不提供操作系统级授权。两个模式都无法阻止拥有同一用户文件权限的恶意进程直接改仓库。
 
 - [MCP 配置与参数](docs/zh-CN/mcp.md)
+- [v0.5.2 注册、审阅与来源有效性修复](docs/zh-CN/v0.5.2.md)
 - [v0.5.1 恢复修复与升级说明](docs/zh-CN/v0.5.1.md)
 - [v0.5 上传流程与升级说明](docs/zh-CN/v0.5.md)
 - [队列维护与中断恢复](docs/zh-CN/maintenance.md)
@@ -56,7 +68,7 @@ CHmemX 将职责明确拆开：
 [![CHmemX v0.3 中文架构图](docs/assets/v03-zh-CN.png)](docs/v03.html)
 
 点击图片打开 [v0.3 中文交互图](docs/v03.html)。[早期完整团队流程图](docs/zh-CN/architecture.html)
-保留作设计历史；当前规则以 [v0.5 说明](docs/zh-CN/v0.5.md)为准。
+保留作设计历史；流程见 [v0.5 说明](docs/zh-CN/v0.5.md)，最新修复见 [v0.5.2](docs/zh-CN/v0.5.2.md)。
 
 ## 核心特性
 
@@ -71,6 +83,8 @@ CHmemX 将职责明确拆开：
 - Runtime 仅依赖 Python 标准库和 Git。
 
 ## 高级团队流程（原有 CLI 继续支持）
+
+以下命令使用旧版 v1/v2 指向器。新接入优先使用 MCP 或 `chmemx recall`，它们运行 v3 检索并检查项目来源是否仍有效。两套索引格式独立；运行旧版优化器不会优化 MCP 索引。
 
 ### 1. 任务开始：读取共享记忆
 
@@ -199,9 +213,18 @@ python3 runtime/simple_memory.py init \
 
 更完整步骤见[中文快速开始](docs/zh-CN/quickstart.md)。
 
-## 内容网格与向量指向器
+## 检索引擎与索引格式
 
-默认向量器完全离线且可复现：
+| 入口 | 检索方式 | 评测边界 |
+|---|---|---|
+| MCP `start` / `recall`、CLI `chmemx recall` | `retrieval_v3.py`：BM25 与稀疏词法排序；可选本地 ONNX 嵌入，保守融合。 | v3 回归与保留测试集，检查当前项目来源。 |
+| `scripts/vector_memory.py` | 旧版 v1/v2 哈希词法稀疏向量、余弦评分与图路由。 | 旧版黄金查询及自动 Active 覆盖；不包含 v3 来源新鲜度检查。 |
+
+这里的“向量”指真实的稀疏向量表示，不代表每个后端都用了神经网络，也不代表运行了向量数据库。默认不下载模型；[可选 ONNX 后端](docs/semantic.md)通过 v3 使用，不由旧脚本开启。
+
+### 旧版指向器细节
+
+v1/v2 向量器完全离线且可复现：
 
 - NFKC 规范化与大小写折叠；
 - 英文单词 Token 与中文 2/3 字符片段；
@@ -212,10 +235,7 @@ python3 runtime/simple_memory.py init \
 - 沿图关系扩展一跳；
 - 在有限评分参数中自动择优，并使用动态分数阈值。
 
-默认是词法稀疏向量，不是神经网络嵌入。v0.3 已提供[可选本地 ONNX 语义后端](docs/semantic.md)，
-使用保守融合和独立评测，不自动下载模型或开启。
-
-召回精度必须可测、可回归。策展者维护一套脱敏黄金查询；每次 Active 提交后通过质量门禁发布索引：
+现有 v1/v2 安装可继续维护脱敏黄金查询，并通过旧版质量门禁发布索引：
 
 ```bash
 python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
@@ -228,6 +248,7 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
 ```
 
 优化器只在三套受限、确定性的评分参数中择优。黄金查询和自动生成的 Active 覆盖检查全部通过后才发布；不会收集真实任务查询日志。
+它调整词法评分，不训练嵌入模型。文件名、命令和 v1/v2 格式保持兼容；不要把 v3 索引传给旧脚本。
 黄金查询格式见 [`examples/recall-evaluation.example.json`](examples/recall-evaluation.example.json)。
 
 ## 仓库结构
@@ -236,7 +257,8 @@ python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
 runtime/simple_memory.py             真实记忆 Git 的唯一运行时接口
 scripts/assemble_inventory.py        校验单个来源上传包
 scripts/curate_uploads.py            去重并与当前 Active 对比
-scripts/vector_memory.py             构建、查询和路由向量指向器
+scripts/vector_memory.py             旧版 v1/v2 词法向量指向器
+scripts/retrieval_v3.py               当前 MCP/CLI 检索
 schemas/agent-export-v1.schema.json  来源上传包 Schema
 schemas/recall-evaluation-v1.schema.json  召回质量黄金查询 Schema
 skills/memory-graph/SKILL.md         可移植 Skill
