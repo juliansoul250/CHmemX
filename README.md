@@ -19,14 +19,14 @@ nodes, requests owner approval, and commits permanent memory atomically to Git.
 > CHmemX is designed to prevent normal workflow mistakes and memory conflicts. It is not an OS
 > security boundary against a malicious process running as the same user.
 
-## Start with v0.5.2
+## Start with v0.5.3
 
 CHmemX now exposes three stdio MCP tools: `start`, `recall`, and `upload`.
 No server port, database service, API key, or embedding download is required for the default setup.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.2'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.3'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
@@ -52,6 +52,7 @@ signatures establish key provenance, not truth or OS-level authorization. Neithe
 a malicious process with the same user's filesystem access from editing the store.
 
 - [MCP configuration and tool arguments](docs/mcp.md)
+- [v0.5.3 identity and legacy-body fixes](docs/v0.5.3.md)
 - [v0.5.2 registration, review and source-validity fixes](docs/v0.5.2.md)
 - [v0.5.1 recovery fixes and upgrade notes](docs/v0.5.1.md)
 - [v0.5 upload lifecycle and upgrade notes](docs/v0.5.md)
@@ -80,7 +81,7 @@ CHmemX separates the responsibilities:
 
 Open the [v0.3 interactive map](docs/v03-en.html). The [earlier full team pipeline](docs/architecture.html)
 is retained as versioned design history. See [v0.5](docs/v0.5.md) for the lifecycle and
-[v0.5.2](docs/v0.5.2.md) for the latest fixes.
+[v0.5.3](docs/v0.5.3.md) for the latest fixes.
 
 ## Key properties
 

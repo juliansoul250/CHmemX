@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.5.3
 
 - Check exact fact identities and aliases against all validated definitions, independently of display pagination.
 - Permit short corrections to valid legacy long records without relaxing new-upload limits or Owner review, preserving superseded history.
+- Verify project-scoped decision/evidence corrections and large conflict responses through the standard MCP SDK, including reconnects.
 
 ## 0.5.2 (2026-09-07)
 

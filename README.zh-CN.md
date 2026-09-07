@@ -16,13 +16,13 @@ CHmemX 让 Codex、Claude Code、OpenCode、Pi、ZCode 等工具拥有各自的�
 
 > CHmemX 用于减少正常工作流程中的误写、重复和记忆冲突。它不是抵抗同一操作系统用户下恶意进程的安全边界。
 
-## v0.5.2：接入与使用
+## v0.5.3：接入与使用
 
 现在可以通过 stdio MCP 调用 `start`、`recall`、`upload`。默认不需要端口、数据库服务、API Key 或向量模型。
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.2'
+.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.3'
 .venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id codex-main init --project-id project-demo
 ```
@@ -43,6 +43,7 @@ python3 -m venv .venv
 Personal 主动放宽了写入政策，适合个人日常偏好，不能代替 Team 审阅。Agent 名称表示流程来源；可选签名证明内容来自哪个密钥，不证明内容正确，也不提供操作系统级授权。两个模式都无法阻止拥有同一用户文件权限的恶意进程直接改仓库。
 
 - [MCP 配置与参数](docs/zh-CN/mcp.md)
+- [v0.5.3 身份检查与历史长正文修复](docs/zh-CN/v0.5.3.md)
 - [v0.5.2 注册、审阅与来源有效性修复](docs/zh-CN/v0.5.2.md)
 - [v0.5.1 恢复修复与升级说明](docs/zh-CN/v0.5.1.md)
 - [v0.5 上传流程与升级说明](docs/zh-CN/v0.5.md)
@@ -68,7 +69,7 @@ CHmemX 将职责明确拆开：
 [![CHmemX v0.3 中文架构图](docs/assets/v03-zh-CN.png)](docs/v03.html)
 
 点击图片打开 [v0.3 中文交互图](docs/v03.html)。[早期完整团队流程图](docs/zh-CN/architecture.html)
-保留作设计历史；流程见 [v0.5 说明](docs/zh-CN/v0.5.md)，最新修复见 [v0.5.2](docs/zh-CN/v0.5.2.md)。
+保留作设计历史；流程见 [v0.5 说明](docs/zh-CN/v0.5.md)，最新修复见 [v0.5.3](docs/zh-CN/v0.5.3.md)。
 
 ## 核心特性
 

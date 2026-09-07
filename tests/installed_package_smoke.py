@@ -72,7 +72,7 @@ def main():
             check=True,
         )
         replies = [json.loads(line) for line in process.stdout.splitlines()]
-        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.2"
+        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.3"
         pending = json.loads(replies[1]["result"]["content"][0]["text"])
         assert pending["status"] == "PENDING_CURATION"
         batch = cli("review", pending["upload_id"])
