@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Check exact fact identities and aliases against all validated definitions, independently of display pagination.
+- Permit short corrections to valid legacy long records without relaxing new-upload limits or Owner review, preserving superseded history.
+
 ## 0.5.2 (2026-09-07)
 
 - Roll back failed project/source registration without retaining staged changes or deleting unrelated files.

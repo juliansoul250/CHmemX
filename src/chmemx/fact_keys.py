@@ -4,14 +4,8 @@ from __future__ import annotations
 from .runtime import simple_memory as core
 
 
-def directory(runtime, cwd, query="", limit=30):
-    if (
-        not isinstance(query, str)
-        or len(query) > 8192
-        or type(limit) != int
-        or not 1 <= limit <= 100
-    ):
-        raise ValueError("FACT_QUERY_INVALID")
+def _definitions(runtime, cwd):
+    """Load the complete validated definitions visible to this project."""
     core.ensure_clean(runtime.store)
     pid, _ = runtime.project_for_cwd(cwd)
     rows = {}
@@ -87,19 +81,33 @@ def directory(runtime, cwd, query="", limit=30):
                 **row,
                 "description_kind": "declared fact definition",
             }
+    return rows.values()
+
+
+def directory(runtime, cwd, query="", limit=30):
+    if (
+        not isinstance(query, str)
+        or len(query) > 8192
+        or type(limit) != int
+        or not 1 <= limit <= 100
+    ):
+        raise ValueError("FACT_QUERY_INVALID")
     q = query.casefold()
     selected = [
         r
-        for r in rows.values()
+        for r in _definitions(runtime, cwd)
         if not q or q in r["key"].casefold() or any(q in a.casefold() for a in r["aliases"])
     ]
     return sorted(selected, key=lambda r: (r.get("project_id") or "", r["key"]))[:limit]
 
 
 def conflicts(runtime, cwd, key, scope, memory_class):
-    return [
+    if not isinstance(key, str) or len(key) > 8192:
+        raise ValueError("FACT_QUERY_INVALID")
+    matches = [
         r
-        for r in directory(runtime, cwd, key, 100)
+        for r in _definitions(runtime, cwd)
         if r["scope"] == scope
         and ((key == r["key"] and memory_class not in r["allowed_classes"]) or key in r["aliases"])
     ]
+    return sorted(matches, key=lambda r: (r.get("project_id") or "", r["key"]))

@@ -616,7 +616,7 @@ class Service:
         ]
         same_body = bool(
             current
-            and core.clean_text(current[0]["body"], "body", 8192)
+            and core.clean_text(current[0]["body"], "body", core.MAX_BODY_BYTES)
             == core.clean_text(value, "body", 8192)
         )
         audit_digest = search.digest(
