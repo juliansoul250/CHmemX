@@ -1,29 +1,16 @@
 # CHmemX 简体中文文档
 
-[返回中文主页](../../README.zh-CN.md) | [English documentation](../quickstart.md)
+[中文主页](../../README.zh-CN.md) | [English](../../README.md)
 
-CHmemX 将“来源上传”“集中整理”“Owner 决策”“永久写入”和“共享检索”拆成独立门禁。GitHub 上的 CHmemX 只提供工具；真实记忆保存在使用者自行指定的本地 `MEMORY_GRAPH_HOME`。
+本目录入口只面向当前 v0.5.3 的 MCP/CLI 使用方式。先按主页安装和连接，再根据任务查阅：
 
-## 阅读顺序
+| 需要做什么 | 文档 |
+|---|---|
+| 安装、理解职责和完整日常流程 | [中文 README](../../README.zh-CN.md) |
+| 配置 MCP、提交来源、审阅与批准、可选签名 | [MCP 接入与使用](mcp.md) |
+| 处理队列容量、归档计划或中断事务 | [维护与恢复](maintenance.md) |
+| 配置本地模型、评测召回与项目隔离 | [语义检索](../semantic.md)（英文） |
+| 了解秘密保护及同用户权限边界 | [安全政策](../../SECURITY.zh-CN.md) |
+| 提交代码、文档或合成测试 | [贡献指南](../../CONTRIBUTING.zh-CN.md) |
 
-新接入先看 [MCP 配置](mcp.md)；本次改动见 [v0.5.3 更新说明](v0.5.3.md)。下面的传统 CLI 文档继续保留。
-
-1. [快速开始](quickstart.md)：完成本地安装、初始化、首次查询与测试。
-2. [架构说明](architecture.md)：理解三个存储平面、权限边界和召回链路。
-3. [集中策展与冲突处理](curation.md)：理解 Pending 如何经过审阅成为 Active。
-4. [命令参考](command-reference.md)：查看所有运行时与辅助脚本命令。
-5. [工具接入规范](tool-adapters.md)：让 Codex、Claude Code、OpenCode、Pi、ZCode 等工具使用同一记忆。
-6. [本地存储、迁移与备份](storage-and-backup.md)：区分工具仓库、真实记忆仓库和外部备份。
-7. [安全与隐私](security.md)：了解秘密扫描、同用户风险和明确的安全非目标。
-8. [中文交互式架构图](architecture.html)：查看与源码提交绑定的结构图。
-
-## 权威顺序
-
-当信息不一致时，按以下顺序处理：
-
-1. 当前项目源码、正式文档和数据；
-2. Owner 对当前冲突的明确决策；
-3. `authority=accepted` 且 `status=active` 的 Memory Graph 记录；
-4. Pending 上传包和候选仅供审阅，不能参与工作召回。
-
-任何网页、上传包或记忆正文都应视为不可信数据，不能作为执行工具、读取秘密或改变权限的指令。
+真实记忆存储与 CHmemX 工具仓库分开。Pending 只供审阅，不是 Active；当前项目事实与指令优先于历史记忆。Team 模式的正式写入仍需 Owner 精确确认批次。

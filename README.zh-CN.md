@@ -6,322 +6,174 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
 
-**面向多个 AI Agent 的本地优先、Git 管理、共享网状记忆系统。**
+供多个 AI Agent 使用的本地共享记忆，写入经过审阅，历史由 Git 保存。
 
-CHmemX 让 Codex、Claude Code、OpenCode、Pi、ZCode 等工具拥有各自的上传入口，同时读取同一个经过整理的内容型记忆项目。
+CHmemX 让不同工具中的 Agent 复用已确认的偏好、决策和经验。各来源提交自己的内容，策展者与已有记忆对比，Owner 决定哪些可以永久保存。默认 Team 模式下，上传内容只有在精确批次获批后才参与召回。
 
-默认团队模式下，来源 Agent 查询已生效记忆，并上传待整理内容。策展者负责来源校验、秘密扫描、去重、冲突比较和归类。Owner 精确确认批次后，整批内容才提交到 Git。
+本页只说明当前 **v0.5.3** 软件包及其 MCP/CLI 接口。
 
-> **重要边界：** GitHub 上的 CHmemX 仓库只包含脱敏后的工具代码、Skill、Schema、文档、测试和虚构示例。你的真实记忆保存在另外指定的本地 `MEMORY_GRAPH_HOME` Git 仓库中，不会因为更新或推送 CHmemX 而自动上传。
+## 提供什么
 
-> CHmemX 用于减少正常工作流程中的误写、重复和记忆冲突。它不是抵抗同一操作系统用户下恶意进程的安全边界。
+- 三项 stdio MCP 工具：`start`、`recall`、`upload`。基础安装只需 Python 和 Git，不需要 API Key、端口、数据库服务或模型下载。
+- 区分全局偏好和已注册项目记忆，用 Canonical Key 与关联主题节点组织内容。
+- Team 写入前提供完整的新旧对比、来源证据和精确批次审阅。
+- 原子 Git 提交，保留审批历史与替代关系，不静默覆盖记录。
+- 本地词法检索、可选 ONNX 语义检索、来源有效性检查和有界图谱关联。
 
-## v0.5.3：接入与使用
+真实记忆必须放在工具源码仓库之外。公开 CHmemX 代码不会自动公开记忆。CHmemX 管理工作流程，**不提供操作系统级隔离**；拥有同一用户文件权限的进程仍能直接改文件。
 
-现在可以通过 stdio MCP 调用 `start`、`recall`、`upload`。默认不需要端口、数据库服务、API Key 或向量模型。
+## 安装与接入
+
+需要 Python 3.10+ 和 Git。选择一个现有 Git 项目，再为记忆指定一个新建的独立目录。项目事实必须引用已提交的来源文件。
+
+macOS 或 Linux：
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.3'
-.venv/bin/chmemx --store /absolute/private-memory --cwd /absolute/git-project \
-  --agent-id codex-main init --project-id project-demo
+. .venv/bin/activate
+python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.3'
+
+chmemx --store /absolute/private-memory --cwd /absolute/git-project \
+  --agent-id source-one init --project-id project-demo
+
+chmemx --store /absolute/private-memory --cwd /absolute/git-project \
+  --agent-id source-one status
 ```
 
-项目目录必须是现有 Git 根；记忆目录使用新建的独立位置。然后添加 [MCP 客户端配置](docs/zh-CN/mcp.md)。任务开始查记忆，结束上传；批准后的索引重建由入口处理。
+Windows 用 `py -3 -m venv .venv` 创建环境，后续改用 `.venv\Scripts\python.exe` 和 `.venv\Scripts\chmemx.exe`。初始化只创建记忆 Git 仓库，不修改来源项目；不要对已有记忆目录重复初始化。
+
+支持通用 JSON 格式的 MCP 客户端可配置为：
+
+```json
+{
+  "mcpServers": {
+    "chmemx": {
+      "command": "/absolute/.venv/bin/chmemx",
+      "args": [
+        "--store", "/absolute/private-memory",
+        "--cwd", "/absolute/git-project",
+        "--agent-id", "source-one",
+        "serve"
+      ]
+    }
+  }
+}
+```
+
+使用可执行文件的绝对路径、正确的项目根目录，并为各客户端分配不同的来源 ID。项目和来源上下文由这些启动参数固定。每个客户端维护自己的配置、启动独立 stdio 进程。[MCP 接入文档](docs/zh-CN/mcp.md)提供 Codex TOML、完整参数和签名配置。
+
+安装后重连该客户端的 CHmemX 进程，核对 MCP 握手版本为 `0.5.3`，再调用 `start`。只更新源码不等于已更新运行中的客户端。标准 Python MCP SDK 已有测试覆盖，不代表所有桌面工具版本都已验证。
+
+## 日常使用
+
+| 工具 | 用途 | 必须核对 |
+|---|---|---|
+| `start` | 读取项目上下文、政策和队列健康状态；可查询上传状态或 Key 目录。 | 项目、写入模式及队列警告。 |
+| `recall` | 搜索主题或精确 Key；可指定 1–20 条结果。 | Scope、来源有效性、主命中、关联项及 `needs_review`。 |
+| `upload` | 提交 Key、字符串正文和来源；可附项目范围、类别、签名或请求 ID。 | 实际返回状态；上传不等于保存。 |
+
+例如，向 `upload` 提交一条有真实来源的偏好：
+
+```json
+{
+  "key": "preference.editor.theme",
+  "value": "The preferred editor theme is blue.",
+  "source": {
+    "quote": "The preferred editor theme is blue.",
+    "thread_id": "owner-conversation-reference"
+  },
+  "request_id": "editor-theme-001"
+}
+```
+
+这只是格式示例，不应直接写入你的记忆。引用文本是来源 Agent 的声明，不是 Owner 指令的独立证明。项目记忆使用 `scope="project"`、合适的 `memory_class` 和 `source={"path":"docs/decision.md"}`；服务绑定已注册项目、完整 Git commit 和文件哈希。新正文为字符串，最多 8192 字符。
+
+同一提交重试时保持 `request_id` 不变；内容改变后不要复用。已接收上传可通过 `start(upload_id=...)` 或 CLI `status --upload-id` 查询。
+
+## Pending 如何成为共享记忆
+
+Team 模式的流程：
+
+1. 来源 Agent 上传。精确重复不新增 Active，也不产生提交；隔离内容不参与召回。
+2. 策展者审查上传，对比现值、来源变化，以及身份或别名冲突。
+3. Owner 查看完整批次，并直接给出精确确认。
+4. 策展者批准该批次。成功写入产生一个原子 Git 提交。
+5. 各 Agent 查询已接受记忆。标准服务按需刷新派生索引，调用者不直接编辑索引。
+
+策展命令：
+
+```bash
+chmemx --store /absolute/private-memory --cwd /absolute/git-project review UPLOAD_ID
+
+# 仅在 Owner 直接确认该审阅批次后执行：
+chmemx --store /absolute/private-memory --cwd /absolute/git-project approve BATCH_ID \
+  --digest EXACT_DIGEST --confirmation 'EXACT_OWNER_PHRASE_FROM_REVIEW'
+```
+
+Review 会返回精确的中英文确认短语。占位符、其他 Agent 的声明和被引用的确认都不是授权。内容、来源或 HEAD 变化后必须重新审阅。重复 `review` 复用当前批次，`--refresh` 则使原批次失效。
+
+`PENDING_CURATION` 和 `CONFLICT` 都不是 Active。冲突审阅包含完整现值与 Diff，可能超过客户端的显示上限；不能依据截断输出批准。
 
 ### 选择写入政策
 
-| 决策 | Team（默认） | Personal（显式 `init --mode personal`） |
+| 规则 | Team：默认 | Personal：显式选择 |
 |---|---|---|
-| 谁准备记忆？ | 来源 Agent 上传 Pending，策展者审查。 | 保留上传检查；仅配置过的来源可自动保存。 |
-| 什么可以自动保存？ | 不自动新增 Active。 | 低风险 `preference.*` 偏好新增项；默认按摘要确定的 10% 样本仍需审查。 |
-| 什么必须审查？ | 所有新增、替代批次，均需 Owner 精确确认。 | 冲突、替代、其他事实和高风险内容；进入审阅的批次同样需 Owner 精确确认。 |
-| 精确重复 | 不新增 Active，也不产生 Git 提交。 | 相同。 |
-| 证据与召回 | Git 保留审批历史；Pending、隔离内容不召回。 | 相同；自动写入也记录政策决策。 |
-| 升级影响 | 保留原政策。 | 升级不会自动开启。 |
+| 自动新增 Active | 不允许。 | 仅限配置过的来源提交低风险 `preference.*` 新偏好；默认仍有按摘要确定的 10% 审查样本。 |
+| 必须审阅 | 每个新增或替代批次。 | 冲突、替代、其他事实、高风险内容和抽中样本。 |
+| 经审阅的写入 | Owner 精确确认批次。 | Owner 精确确认批次。 |
+| 精确重复 | 不新增 Active 或提交。 | 相同。 |
 
-Personal 主动放宽了写入政策，适合个人日常偏好，不能代替 Team 审阅。Agent 名称表示流程来源；可选签名证明内容来自哪个密钥，不证明内容正确，也不提供操作系统级授权。两个模式都无法阻止拥有同一用户文件权限的恶意进程直接改仓库。
+Personal 仅通过新建仓库时的 `init --mode personal` 选择，会主动放宽写入政策；调用者不能在上传参数里开启。策展者与 Owner 是流程职责，不是经过身份认证的多用户权限。审批和管理命令不开放为 MCP 工具。
 
-- [MCP 配置与参数](docs/zh-CN/mcp.md)
-- [v0.5.3 身份检查与历史长正文修复](docs/zh-CN/v0.5.3.md)
-- [v0.5.2 注册、审阅与来源有效性修复](docs/zh-CN/v0.5.2.md)
-- [v0.5.1 恢复修复与升级说明](docs/zh-CN/v0.5.1.md)
-- [v0.5 上传流程与升级说明](docs/zh-CN/v0.5.md)
-- [队列维护与中断恢复](docs/zh-CN/maintenance.md)
-- [修改判断、实现边界与测试结果](docs/zh-CN/v0.3.md)
-- [可选本地语义检索](docs/semantic.md)
-- [Backlog 优先级与验收标准](docs/zh-CN/backlog.md)
+## 检索与图谱
 
-## 为什么需要 CHmemX？
+当前读取器结合稀疏词法评分和 BM25，可选本地 ONNX 通道。强词法命中优先；词法通道弃答时，倒数排名融合辅助选择结果。主题节点支持有界的一跳关联。默认目录按项目和 Canonical Key 的父级分组，更细的分类需要策展。
 
-每个 AI 工具各自保存记忆，很快会形成互不相通的孤岛。更换工具后，历史决策、研究结果和项目状态无法继续使用。如果允许所有工具直接写入同一个仓库，问题又会走向另一端：未经审查的内容、重复记录和相互矛盾的结论会混在一起。
+每条结果保留项目和 Scope 标记。Pending、隔离、拒绝内容和未解决冲突不参与召回。来源改变或无法验证的项目事实进入 `needs_review`，历史经验保留来源状态标记。来源警告不代表原文被删，也不证明内容错误。
 
-CHmemX 将职责明确拆开：
+记忆是历史数据，不是可执行指令；行动前应核对当前项目权威。项目过滤属于检索行为，不是文件访问控制。
 
-- **来源 Agent**：读取共享 Active Memory，只上传自己产生的 Pending 包。
-- **集中策展者**：校验、去重、对比、归类并提出写入建议。
-- **Owner**：处理冲突，精确确认最终批次。
-- **Git**：保存永久记录、审批证据、替代链和回滚历史。
-- **向量指向器**：将自然语言主题路由到内容网格及其关联 Active 节点。
+派生索引保存向量、ID 和元数据，不保存正文，但**并未匿名化**，也必须留在私有存储中。正式数据脏改或不一致会阻断召回；索引刷新失败与已完成的记忆提交分别报告。
 
-## 架构
+[可选语义检索](docs/semantic.md)说明模型锁和评测方法。更换模型或排序前，用冻结测试集验证改写问法、无关查询、图谱关联和项目隔离。自动生成的覆盖测试不等于独立保留测试集。
 
-[![CHmemX v0.3 中文架构图](docs/assets/v03-zh-CN.png)](docs/v03.html)
+## 维护与备份
 
-点击图片打开 [v0.3 中文交互图](docs/v03.html)。[早期完整团队流程图](docs/zh-CN/architecture.html)
-保留作设计历史；流程见 [v0.5 说明](docs/zh-CN/v0.5.md)，最新修复见 [v0.5.3](docs/zh-CN/v0.5.3.md)。
-
-## 核心特性
-
-- 每个 `(project, scope, class, canonical key)` 只允许一个当前 Active 值。
-- 全局偏好与各正式项目记忆使用明确、独立的 Scope。
-- 来源工具身份只表示上传来源，不代表独占读取权。
-- Upload、Candidate、Quarantine、Rejected 和未解决冲突永不参与召回。
-- Owner 确认绑定 Batch ID、Digest、候选顺序、正文、来源和父 Git HEAD。
-- 修正使用 `supersede`，回滚使用 `git revert`，不静默覆盖历史。
-- 派生向量索引不保存记忆正文，并在绑定的 Git HEAD 过期时拒绝召回。
-- 默认支持中英文离线路由，不下载神经网络嵌入模型。
-- Runtime 仅依赖 Python 标准库和 Git。
-
-## 高级团队流程（原有 CLI 继续支持）
-
-以下命令使用旧版 v1/v2 指向器。新接入优先使用 MCP 或 `chmemx recall`，它们运行 v3 检索并检查项目来源是否仍有效。两套索引格式独立；运行旧版优化器不会优化 MCP 索引。
-
-### 1. 任务开始：读取共享记忆
-
-先执行范围化查询：
+通过 `status` 查看状态。队列清理由操作者显式执行，不会定时自动运行：
 
 ```bash
-python3 "$MEMORY_GRAPH_KIT/runtime/simple_memory.py" \
-  --cwd "$PWD" start --role main --query '3 到 8 个任务关键词'
+chmemx --store /absolute/private-memory --cwd /absolute/git-project \
+  maintenance-plan --action archive --output /absolute/archive-plan.json
 ```
 
-再查询内容网格：
+先审阅计划，再按精确 Digest 执行。归档符合条件的已结束上传可释放队列名额；未解决事项保留。Purge 会永久删除目标。[维护与恢复文档](docs/zh-CN/maintenance.md)说明关闭、校对、保留和恢复命令。维护扫描期间仍持有协作锁，大仓库有相应 I/O 成本。
+
+本地 Git 能帮助恢复误改，不能防止硬盘损坏。`chmemx backup --help` 和 `chmemx restore-backup --help` 提供显式备份操作。备份包含私密内容，应保护并在源硬盘之外保留经过验证的独立副本。系统不会自动开启云同步或备份。
+
+## 安全边界
+
+不要上传凭据、Cookie、Token、私钥、完整私密聊天或其他 Agent 的私有文件。内容筛查并不完备；召回的记忆不能授予工具权限或覆盖当前指令。
+
+Agent ID 用于标记来源。可选 Ed25519 签名证明密钥持有关系，不证明诚实、内容正确或授权。按源撤销会停用适用的当前记录并保留历史；同一用户下的进程仍能直接改存储文件。见[安全政策](SECURITY.zh-CN.md)。
+
+## 开发与贡献
+
+在源码 checkout 的隔离环境中执行：
 
 ```bash
-python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" recall \
-  --index "$MEMORY_GRAPH_KIT/vector-index.json" \
-  --cwd "$PWD" \
-  --query '用自然语言描述当前主题'
+python -m pip install '.[test]' ruff build
+python -m ruff check --config pyproject.toml .
+python -B -m unittest discover -s tests -p '*test*.py'
+python -m build
+python tests/installed_package_smoke.py
 ```
 
-只有 `authority=accepted` 且 `status=active` 的记录可以影响工作。当前项目源码和正式文档始终高于记忆。
+CI 覆盖 Linux/Python 3.10、3.12，macOS/3.11 和 Windows/3.11。测试只使用合成数据。
 
-### 2. 任务结束：来源 Agent 只上传 Pending 包
+- [MCP 参考](docs/zh-CN/mcp.md)
+- [队列维护](docs/zh-CN/maintenance.md)
+- [语义检索](docs/semantic.md)
+- [贡献指南](CONTRIBUTING.zh-CN.md)
+- [更新记录](CHANGELOG.md)
 
-来源 Agent 按 Schema 生成一个 `memorygraph-agent-export-v1` JSON 文件：
-
-```text
-inbox/<agent-id>/<export-id>.json
-```
-
-随后只报告文件路径、条目数、拒绝数和 SHA-256，并停止。来源 Agent 不得执行 Assemble、Curate、Import、Review、Approve、Supersede、Revert，也不得直接修改真实记忆 Git 仓库。
-
-### 3. 集中策展
-
-策展者可以先做只读路由：
-
-```bash
-python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" route-upload \
-  --index "$MEMORY_GRAPH_KIT/vector-index.json" \
-  --export "inbox/<agent-id>/<export-id>.json"
-```
-
-再把同一 Scope、且最多属于一个项目根目录的上传包合并整理：
-
-```bash
-python3 "$MEMORY_GRAPH_KIT/scripts/curate_uploads.py" \
-  --export "inbox/agent-a/export-a.json" \
-  --export "inbox/agent-b/export-b.json" \
-  --curator-agent-id main-memory-curator \
-  --curation-id curation-example \
-  --output "outbox/curation-example.inventory.json" \
-  --report "outbox/curation-example.report.json"
-```
-
-整理报告会：
-
-- 保留每个来源 Agent ID 和 Export ID；
-- 合并字节级完全相同的候选，同时保留全部来源；
-- 阻止同一 Canonical Identity 的不同值；
-- 与当前 Active Memory 对比；
-- 为冲突提供当前值、新值、来源、字段差异和统一正文 Diff；
-- 标记需要人工判断的语义重叠；
-- 全程不修改真实记忆仓库。
-
-### 4. 处理冲突
-
-策展者向 Owner 提供四种明确建议：
-
-- 保留当前 Active；
-- 用新内容替代当前 Active；
-- 重写为一个合并后的候选；
-- 保留不同 Canonical Key，并用关联节点连接。
-
-冲突决策只允许准备最终候选，不等于批准写入。最终内容仍需进入新的审阅批次，并单独精确确认。
-
-### 5. 导入、审阅和提交
-
-```bash
-python3 "$MEMORY_GRAPH_KIT/runtime/simple_memory.py" \
-  --cwd "$PWD" import-pending \
-  --inventory "outbox/curation-example.inventory.json" \
-  --agent-id main-memory-curator --confirmed
-
-python3 "$MEMORY_GRAPH_KIT/runtime/simple_memory.py" \
-  --cwd "$PWD" batch-review --batch-id '<batch-id>'
-```
-
-Owner 必须准确回复：
-
-```text
-确认记忆批次 <batch-id> <exact-digest>
-```
-
-只有完成该确认后，策展者才可执行 `approve`。审批成功会生成一个原子 Git 提交；任何部分失败都不能半提交。
-
-### 6. 重建派生向量索引
-
-```bash
-python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" build \
-  --store "$MEMORY_GRAPH_HOME" \
-  --taxonomy "$MEMORY_GRAPH_KIT/examples/content-directory.example.json" \
-  --output "$MEMORY_GRAPH_KIT/vector-index.json" --replace
-```
-
-## 旧版运行时初始化
-
-要求：
-
-- Python 3.10+
-- Git
-
-```bash
-git clone https://github.com/juliansoul250/CHmemX.git
-cd CHmemX
-
-export MEMORY_GRAPH_KIT="$PWD"
-export MEMORY_GRAPH_HOME="$HOME/.memory-graph/store"
-
-python3 runtime/simple_memory.py init \
-  --project-root /path/to/first/git/project \
-  --project-id project-example \
-  --title "Example Project" \
-  --confirmed
-```
-
-初始化会创建一个独立的本地 Git 记忆仓库，不会修改来源项目。运行前必须确定真实存储路径和第一个注册项目。
-
-更完整步骤见[中文快速开始](docs/zh-CN/quickstart.md)。
-
-## 检索引擎与索引格式
-
-| 入口 | 检索方式 | 评测边界 |
-|---|---|---|
-| MCP `start` / `recall`、CLI `chmemx recall` | `retrieval_v3.py`：BM25 与稀疏词法排序；可选本地 ONNX 嵌入，保守融合。 | v3 回归与保留测试集，检查当前项目来源。 |
-| `scripts/vector_memory.py` | 旧版 v1/v2 哈希词法稀疏向量、余弦评分与图路由。 | 旧版黄金查询及自动 Active 覆盖；不包含 v3 来源新鲜度检查。 |
-
-这里的“向量”指真实的稀疏向量表示，不代表每个后端都用了神经网络，也不代表运行了向量数据库。默认不下载模型；[可选 ONNX 后端](docs/semantic.md)通过 v3 使用，不由旧脚本开启。
-
-### 旧版指向器细节
-
-v1/v2 向量器完全离线且可复现：
-
-- NFKC 规范化与大小写折叠；
-- 英文单词 Token 与中文 2/3 字符片段；
-- SHA-256 特征哈希生成稀疏向量；
-- 根据全部 accepted + Active 记忆重新计算语料自适应 IDF；
-- 为每条记录建立独立向量，避免共享节点导致同分误召回；
-- 使用余弦相似度匹配内容单元与路由节点；
-- 沿图关系扩展一跳；
-- 在有限评分参数中自动择优，并使用动态分数阈值。
-
-现有 v1/v2 安装可继续维护脱敏黄金查询，并通过旧版质量门禁发布索引：
-
-```bash
-python3 "$MEMORY_GRAPH_KIT/scripts/vector_memory.py" optimize \
-  --store "$MEMORY_GRAPH_HOME" \
-  --taxonomy /path/to/content-directory.json \
-  --suite /path/to/recall-evaluation.json \
-  --output /path/to/vector-index.json \
-  --report /path/to/recall-quality-report.json \
-  --replace
-```
-
-优化器只在三套受限、确定性的评分参数中择优。黄金查询和自动生成的 Active 覆盖检查全部通过后才发布；不会收集真实任务查询日志。
-它调整词法评分，不训练嵌入模型。文件名、命令和 v1/v2 格式保持兼容；不要把 v3 索引传给旧脚本。
-黄金查询格式见 [`examples/recall-evaluation.example.json`](examples/recall-evaluation.example.json)。
-
-## 仓库结构
-
-```text
-runtime/simple_memory.py             真实记忆 Git 的唯一运行时接口
-scripts/assemble_inventory.py        校验单个来源上传包
-scripts/curate_uploads.py            去重并与当前 Active 对比
-scripts/vector_memory.py             旧版 v1/v2 词法向量指向器
-scripts/retrieval_v3.py               当前 MCP/CLI 检索
-schemas/agent-export-v1.schema.json  来源上传包 Schema
-schemas/recall-evaluation-v1.schema.json  召回质量黄金查询 Schema
-skills/memory-graph/SKILL.md         可移植 Skill
-examples/                            仅包含虚构上传包和内容网格模板
-docs/zh-CN/                          简体中文文档
-tests/                               仅使用合成数据的验收测试
-```
-
-## 中文文档
-
-- [中文文档总目录](docs/zh-CN/README.md)
-- [快速开始](docs/zh-CN/quickstart.md)
-- [架构说明](docs/zh-CN/architecture.md)
-- [集中策展与冲突处理](docs/zh-CN/curation.md)
-- [命令参考](docs/zh-CN/command-reference.md)
-- [工具接入规范](docs/zh-CN/tool-adapters.md)
-- [本地存储、迁移与备份](docs/zh-CN/storage-and-backup.md)
-- [安全与隐私](docs/zh-CN/security.md)
-- [中文交互式架构图](docs/zh-CN/architecture.html)
-
-## 本地存储与备份边界
-
-CHmemX 工具仓库与真实记忆仓库是两个不同的 Git 仓库：
-
-- `MEMORY_GRAPH_KIT`：CHmemX 工具代码，可以公开同步和更新。
-- `MEMORY_GRAPH_HOME`：包含真实 Active Memory、审批记录和历史，默认纯本地。
-- `inbox/`：各来源 Agent 的待整理上传区，不是 Active Memory。
-
-本地 Git 可以恢复误写，但不能防止整块硬盘损坏。只有单独配置并验证外部备份或私有远程仓库，才能提供磁盘损坏保护。CHmemX 不会自动启用备份、远程同步或快照。
-
-## 安全与隐私
-
-不得在上传包或记忆中保存密码、Cookie、Token、私钥、完整聊天记录、隐藏运行时状态或个人敏感数据。来源工具私有目录保持隔离；策展者只读取共享上传包和真实记忆仓库。
-
-Agent ID 只用于流程归属，不是经过身份验证的安全主体。同一系统用户下的恶意进程可以冒充 Agent ID；如需抵抗该威胁，必须另外增加操作系统级隔离。
-
-参见[安全政策](SECURITY.zh-CN.md)和[安全与隐私说明](docs/zh-CN/security.md)。
-
-## 测试
-
-```bash
-python3 tests/test_assemble_inventory.py
-python3 tests/test_curate_uploads.py
-python3 tests/test_vector_memory.py
-PYTHONPATH=runtime python3 tests/simple_memory_test.py
-python3 tests/test_docs.py
-```
-
-测试覆盖来源校验、秘密隔离、Candidate 隔离、精确 Owner 确认、原子提交、Supersede、项目隔离、集中冲突审阅、过期向量索引和跨项目路由。文档测试还会检查双语入口、架构图资源和所有仓库内 Markdown 链接。
-
-## 非目标
-
-- 云端托管记忆服务；
-- 加密秘密保险库；
-- 自动裁决记忆冲突；
-- 已认证的多用户授权系统；
-- 取代项目源码、正式文档或数据库。
-
-## 参与贡献
-
-阅读[中文贡献指南](CONTRIBUTING.zh-CN.md)。新增测试必须只使用合成数据。
-
-## 许可证
-
-[MIT](LICENSE)
+[MIT 许可证](LICENSE)
