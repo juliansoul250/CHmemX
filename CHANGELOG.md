@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.4
+
+- Select scope before admitting unrequested project matches: with no known context, qualified global lexical matches retain their scope.
+- Preserve explicit project/key/hint routes and labeled project fallback when no scoped lexical match exists; an empty explicitly requested project does not fall through to another project.
+- Keep source validity, approval policy, ranking thresholds and index format unchanged. Cover the behavior with synthetic stores and real stdio MCP calls.
+
 ## 0.5.3
 
 - Check exact fact identities and aliases against all validated definitions, independently of display pagination.

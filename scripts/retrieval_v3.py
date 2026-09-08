@@ -395,7 +395,13 @@ class Retriever:
         allowed = self.allowed(query, current)
         old = lexical.ranked(self.lexical, query, len(self.records) or 1, cwd)
         eligible = {rid for rid, m in self.records.items() if m.get("project_id") in allowed}
-        if current is None:
+        # Resolve scope before comparing scores from differently scoped records.
+        # An unrequested project's short text must not displace a global match.
+        scoped_match = any(
+            e["id"] in eligible and e["vector_pointer"]["score"] >= 0.17
+            for e in old["entries"]
+        )
+        if current is None and allowed == {None} and not scoped_match:
             best = max((e["vector_pointer"]["score"] for e in old["entries"]), default=0)
             eligible.update(
                 e["id"]

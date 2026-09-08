@@ -88,8 +88,11 @@ It is **not anonymized**: metadata and vectors can disclose information. Keep it
 Every recall checks a clean tracked store, exact HEAD, bound catalog/node/Active-index files,
 record byte hashes, identity and current accepted+active membership. Graph expansion is bounded
 to one hop in the primary record's project. With a registered context, foreign projects need
-an explicit project/key reference. Without a known context, high-confidence lexical foreign
-matches can also be returned, always labeled; this fallback is not project access control.
+an explicit project/key reference. Without a known context, a qualified global lexical match
+suppresses unrequested-project fallback. An explicit project route (name, key or curated hint)
+also prevents fallback into other projects, including when the requested project has no match.
+Otherwise, high-confidence lexical project references remain available and labeled. The existing
+lexical thresholds are unchanged; this is scope selection, not project access control.
 
 v0.4 also checks the bound source file. Stale/unverifiable project facts are separated into
 `needs_review`; historical lessons are labeled. Frozen ranking evaluations must explicitly

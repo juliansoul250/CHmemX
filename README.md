@@ -13,7 +13,7 @@ Each source submits its own material; a curator compares it with existing memory
 Owner decides what becomes permanent. The default Team policy keeps uploads out of recall
 until an exact batch is approved.
 
-This README documents the current **v0.5.3** package and its MCP/CLI interface.
+This README documents the current **v0.5.4** package and its MCP/CLI interface.
 
 ## What it provides
 
@@ -37,7 +37,7 @@ On macOS or Linux:
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.3'
+python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.4'
 
 chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id source-one init --project-id project-demo
@@ -75,7 +75,7 @@ configuration and starts its own stdio process. See [MCP setup](docs/mcp.md) for
 complete arguments and signature setup.
 
 Reconnect the client's CHmemX process after installation. Verify its MCP handshake reports
-`0.5.3`, then call `start`. Updating the source checkout alone does not update a running client.
+`0.5.4`, then call `start`. Updating the source checkout alone does not update a running client.
 The standard Python MCP SDK is tested; that does not establish compatibility with every desktop host.
 
 ## Daily use
@@ -159,6 +159,11 @@ groups records by project and canonical-key parent; richer taxonomy needs delibe
 Each result keeps its project/scope label. Pending, quarantine, rejected content and unresolved
 conflicts are excluded. Changed or unverifiable project facts go to `needs_review`; historical
 lessons retain source-status labels. A source warning is not a deletion or proof that the claim is false.
+
+Without a known project context, a qualified global lexical match takes precedence over
+unrequested project records. Project names, exact keys and curated routing hints can select a
+project explicitly. Only when neither a project route nor a qualified global lexical match exists
+does the reader fall back to labeled, high-confidence project references.
 
 Memory is historical data, not executable instructions. Check current project authority before
 acting. Project filtering is retrieval behavior, not filesystem access control.
