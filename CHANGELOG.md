@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.5
+
+- Add optional `python -m chmemx.skill_retrieval` discovery from an explicit reviewed catalog and structured task intent.
+- Filter positive capabilities, allowed/forbidden actions, project and stage before encoding, then recheck after ranking. Preserve read-only review and local-edit modes without admitting prohibited generation.
+- Return abstention, clarification and per-candidate exclusion reasons; never install or execute a skill. No changes to memory recall, indexes, write policy or MCP tools.
+- Cover structured constraints, encoder admission and numeric boundaries with synthetic regression cases and an installed-wheel smoke check. Natural-language interpretation and host routing remain caller responsibilities.
+
 ## 0.5.4
 
 - Select scope before admitting unrequested project matches: with no known context, qualified global lexical matches retain their scope.

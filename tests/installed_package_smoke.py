@@ -40,6 +40,59 @@ def main():
             )
 
         cli("init", "--project-id", "project-fictional")
+        skill_catalog = root / "skills.json"
+        skill_intent = root / "intent.json"
+        skill_catalog.write_text(
+            json.dumps(
+                [
+                    {
+                        "id": "review",
+                        "description": "review interface",
+                        "capabilities": ["ui"],
+                        "actions": ["read"],
+                    },
+                    {
+                        "id": "generate",
+                        "description": "review interface",
+                        "capabilities": ["ui"],
+                        "actions": ["generate"],
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
+        skill_intent.write_text(
+            json.dumps(
+                {
+                    "decision": "search",
+                    "query": "review interface",
+                    "capabilities": ["ui"],
+                    "allowed_actions": ["read"],
+                    "forbidden_actions": ["generate"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        selection = json.loads(
+            subprocess.check_output(
+                [
+                    str(python),
+                    "-I",
+                    "-B",
+                    "-m",
+                    "chmemx.skill_retrieval",
+                    "--catalog",
+                    str(skill_catalog),
+                    "--intent",
+                    str(skill_intent),
+                ],
+                cwd=root,
+                text=True,
+                encoding="utf-8",
+            )
+        )
+        assert [item["id"] for item in selection["candidates"]] == ["review"]
+        assert selection["execution_authorized"] is False
         requests = [
             {
                 "jsonrpc": "2.0",
@@ -72,7 +125,7 @@ def main():
             check=True,
         )
         replies = [json.loads(line) for line in process.stdout.splitlines()]
-        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.4"
+        assert replies[0]["result"]["serverInfo"]["version"] == "0.5.5"
         pending = json.loads(replies[1]["result"]["content"][0]["text"])
         assert pending["status"] == "PENDING_CURATION"
         batch = cli("review", pending["upload_id"])

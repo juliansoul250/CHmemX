@@ -10,7 +10,7 @@
 
 CHmemX 让不同工具中的 Agent 复用已确认的偏好、决策和经验。各来源提交自己的内容，策展者与已有记忆对比，Owner 决定哪些可以永久保存。默认 Team 模式下，上传内容只有在精确批次获批后才参与召回。
 
-本页只说明当前 **v0.5.4** 软件包及其 MCP/CLI 接口。
+本页只说明当前 **v0.5.5** 软件包及其 MCP/CLI 接口。
 
 ## 提供什么
 
@@ -31,7 +31,7 @@ macOS 或 Linux：
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.4'
+python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.5'
 
 chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id source-one init --project-id project-demo
@@ -62,9 +62,15 @@ Windows 用 `py -3 -m venv .venv` 创建环境，后续改用 `.venv\Scripts\pyt
 
 使用可执行文件的绝对路径、正确的项目根目录，并为各客户端分配不同的来源 ID。项目和来源上下文由这些启动参数固定。每个客户端维护自己的配置、启动独立 stdio 进程。[MCP 接入文档](docs/zh-CN/mcp.md)提供 Codex TOML、完整参数和签名配置。
 
-安装后重连该客户端的 CHmemX 进程，核对 MCP 握手版本为 `0.5.4`，再调用 `start`。只更新源码不等于已更新运行中的客户端。标准 Python MCP SDK 已有测试覆盖，不代表所有桌面工具版本都已验证。
+安装后重连该客户端的 CHmemX 进程，核对 MCP 握手版本为 `0.5.5`，再调用 `start`。只更新源码不等于已更新运行中的客户端。标准 Python MCP SDK 已有测试覆盖，不代表所有桌面工具版本都已验证。
 
 ## 日常使用
+
+可选Skill检索与记忆召回分开：
+`python -m chmemx.skill_retrieval --catalog CATALOG.json --intent INTENT.json`。
+调用方先明确正向目标和禁止动作；模块在相似度排序前筛选候选，排序后复核约束，
+结果不授予执行权限。详见[Skill检索与合成示例](docs/zh-CN/skill-retrieval.md)。
+它不增加MCP工具、不改变宿主原生选择机制，也不需要记忆库。
 
 | 工具 | 用途 | 必须核对 |
 |---|---|---|

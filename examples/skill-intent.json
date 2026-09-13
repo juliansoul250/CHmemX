@@ -1,0 +1,9 @@
+{
+  "decision": "search",
+  "query": "Review the existing UI for readability and layout",
+  "capabilities": ["ui-review"],
+  "allowed_actions": ["read"],
+  "forbidden_actions": ["generate-image", "write"],
+  "project": "project-demo",
+  "stage": "review"
+}

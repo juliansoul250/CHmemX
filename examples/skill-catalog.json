@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ui-review",
+    "description": "Review an existing UI for readability and layout. 检查现有界面的可读性和布局。",
+    "capabilities": ["ui-review"],
+    "actions": ["read"],
+    "stages": ["review"]
+  },
+  {
+    "id": "ui-image-generation",
+    "description": "Generate a new UI image. 生成新界面图片。",
+    "capabilities": ["ui-review", "ui-generation"],
+    "actions": ["generate-image"]
+  },
+  {
+    "id": "private-project-review",
+    "description": "Review an existing UI for readability and layout.",
+    "capabilities": ["ui-review"],
+    "actions": ["read"],
+    "projects": ["project-other"]
+  }
+]

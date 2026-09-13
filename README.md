@@ -13,7 +13,7 @@ Each source submits its own material; a curator compares it with existing memory
 Owner decides what becomes permanent. The default Team policy keeps uploads out of recall
 until an exact batch is approved.
 
-This README documents the current **v0.5.4** package and its MCP/CLI interface.
+This README documents the current **v0.5.5** package and its MCP/CLI interface.
 
 ## What it provides
 
@@ -37,7 +37,7 @@ On macOS or Linux:
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.4'
+python -m pip install 'git+https://github.com/juliansoul250/CHmemX.git@v0.5.5'
 
 chmemx --store /absolute/private-memory --cwd /absolute/git-project \
   --agent-id source-one init --project-id project-demo
@@ -75,10 +75,17 @@ configuration and starts its own stdio process. See [MCP setup](docs/mcp.md) for
 complete arguments and signature setup.
 
 Reconnect the client's CHmemX process after installation. Verify its MCP handshake reports
-`0.5.4`, then call `start`. Updating the source checkout alone does not update a running client.
+`0.5.5`, then call `start`. Updating the source checkout alone does not update a running client.
 The standard Python MCP SDK is tested; that does not establish compatibility with every desktop host.
 
 ## Daily use
+
+Optional Skill discovery is separate from memory recall: use
+`python -m chmemx.skill_retrieval --catalog CATALOG.json --intent INTENT.json`.
+The caller first resolves positive goals and forbidden actions; candidates are filtered
+before similarity ranking and checked afterward. Results never authorize execution.
+See [Skill retrieval and synthetic examples](docs/skill-retrieval.md). It adds no MCP tool,
+does not change native host routing, and does not require a memory store.
 
 | Tool | Use | Check in the result |
 |---|---|---|
