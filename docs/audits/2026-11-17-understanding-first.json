@@ -1,0 +1,200 @@
+{
+  "date": "2026-11-17",
+  "status": "UNDERSTANDING_CONTRACT_VERIFIED_QUALITY_INCOMPLETE_NOT_DEPLOYED",
+  "literal_compatibility": {
+    "lexical": {
+      "positive_cases": 162,
+      "failed_positive_cases": 9,
+      "noise_empty": 10,
+      "before_after_identical": true,
+      "old_synthetic_passed": 39,
+      "old_synthetic_cases": 43
+    },
+    "hybrid": {
+      "positive_cases": 162,
+      "failed_positive_cases": 6,
+      "noise_empty": 10,
+      "before_after_identical": true,
+      "old_synthetic_passed": 41,
+      "old_synthetic_cases": 43
+    }
+  },
+  "planned_experiment": {
+    "records": 6,
+    "cases": 12,
+    "distinct_questions": 11,
+    "evidence_role": "synthetic; independent question-only Agent planning, NOT human-annotated blind evaluation",
+    "modes": {
+      "literal": {
+        "passed": 8,
+        "positive_all_expected_passed": 5,
+        "positive_cases": 8,
+        "negative_empty": 3,
+        "negative_cases": 4,
+        "mean_positive_recall": 0.8125,
+        "mean_positive_precision": 1.0,
+        "maximum_body_reads": 2,
+        "duplicate_body_reads": 0,
+        "failed_synthetic_case_ids": [
+          "multi",
+          "negative_context",
+          "zh_compound",
+          "topic_not_answer"
+        ]
+      },
+      "fixture_plan": {
+        "passed": 9,
+        "positive_all_expected_passed": 6,
+        "positive_cases": 8,
+        "negative_empty": 3,
+        "negative_cases": 4,
+        "mean_positive_recall": 0.875,
+        "mean_positive_precision": 1.0,
+        "maximum_body_reads": 2,
+        "duplicate_body_reads": 0,
+        "failed_synthetic_case_ids": [
+          "negative_context",
+          "zh_compound",
+          "topic_not_answer"
+        ]
+      },
+      "independent_plan": {
+        "passed": 9,
+        "positive_all_expected_passed": 6,
+        "positive_cases": 8,
+        "negative_empty": 3,
+        "negative_cases": 4,
+        "mean_positive_recall": 0.875,
+        "mean_positive_precision": 1.0,
+        "maximum_body_reads": 2,
+        "duplicate_body_reads": 0,
+        "failed_synthetic_case_ids": [
+          "negative_context",
+          "zh_compound",
+          "topic_not_answer"
+        ]
+      }
+    }
+  },
+  "tests": {
+    "python_3_14_6": {
+      "passed": 293,
+      "seconds": 110.198
+    },
+    "python_3_10_1_noneditable_wheel": {
+      "passed": 293,
+      "seconds": 128.863
+    },
+    "wheel_sdist": "PASS",
+    "external_installed_mcp_lifecycle": "PASS",
+    "ruff": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "integrity": {
+    "canonical_head_unchanged": true,
+    "canonical_tracked_clean": true,
+    "live_index_unchanged": true,
+    "live_model_lock_unchanged": true,
+    "initial_files_unchanged_outside_declared_edits": 98,
+    "declared_changed_initial_files": [
+      "docs/architecture.md",
+      "docs/mcp.md",
+      "docs/semantic.md",
+      "docs/zh-CN/architecture.md",
+      "docs/zh-CN/mcp.md",
+      "schemas/recall-evaluation-v1.schema.json",
+      "scripts/evaluate_retrieval.py",
+      "scripts/retrieval_v3.py",
+      "scripts/vector_memory.py",
+      "src/chmemx/cli.py",
+      "src/chmemx/mcp_server.py",
+      "src/chmemx/service.py",
+      "tests/installed_package_smoke.py",
+      "tests/test_recall_scope.py",
+      "tests/test_retrieval_efficiency.py"
+    ],
+    "tested_source_files_match": 51
+  },
+  "paired_latency_ms": {
+    "six_record_search_execution_only": {
+      "literal": {
+        "samples": 30,
+        "p50_ms": 67.59987500845455,
+        "p95_ms": 97.53675002139062
+      },
+      "independent_plan": {
+        "samples": 30,
+        "p50_ms": 72.33181250921916,
+        "p95_ms": 76.19374999194406
+      }
+    },
+    "planning_latency": "not included; caller model separate",
+    "sample_selection": "9 search-decision questions, 34 alternating pairs, discard4warmup",
+    "103_record_literal_regression_only": {
+      "before": {
+        "samples": 30,
+        "p50_ms": 76.30200000130571,
+        "p95_ms": 84.31045798351988
+      },
+      "after": {
+        "samples": 30,
+        "p50_ms": 75.43652050662786,
+        "p95_ms": 90.27374998549931
+      }
+    }
+  },
+  "frozen_new_fixture_sha256": "10e7220779c655cd333726d53002ab7347acef6ff3af3e9290d3ee2438021c4b",
+  "independent_plan_sha256": "a064811ad88a0863f41c55bec05742f36b590dceed0c9ab5bafdfd264681a341",
+  "synthetic_index_sha256": "bc4fc56cf2b1752fbc8c105a518a06ea6b925dd30571e3dff8f9a87278cf675f",
+  "historical_index_sha256": "6b95a9db5ded60e78a7d3fa3c7c4df371400dd26750d6791e422f52b6b90dc8b",
+  "historical_suite_sha256": [
+    "31569fd497181f075775ff0994be41c7648446325924f3d6901f9a362a25d625",
+    "dc14d2984983c5c9fbb90d53eebffda78318b569b43fbf1e00de7173420d63ac",
+    "c86d9fd686ce5254e0f12e677bffdf8c3b357e4a03931bf10eb92039a728998e",
+    "d84161cbedc0c8f9092575979cfedb2c8a5a8a0e7a33086d07d7595c6b53a59c",
+    "d97577eb935812e70d96341422fa65f91e7b2b4f98ed17eec2f8c9504431ba47",
+    "647c6444afa3850243d62f5d30eaf5b22195b0778305de0b8a8ead3eccfc350a",
+    "071ab76ca9e0194dc389a292e1288cb9567c52de7a40fb37d8df32ceccb13eb0",
+    "3bd4400c959cde214f44835ae90599e46bc2bfa98f352ab71a20b070752616ae"
+  ],
+  "limits": [
+    "Historical ranking-only; external source eligibility not checked.",
+    "Literal regression does not prove understood-workflow quality.",
+    "Caller interpretation and answer support are not verified.",
+    "Old clients must migrate before deployment.",
+    "Historical6 failed cases and new3 failed cases retained; no gate lowering.",
+    "No automatic graph relations, memory-body changes or new NLP model."
+  ],
+  "review": {
+    "model": "openai-codex/gpt-6.1-sol",
+    "thinking": "high",
+    "scope": "public static implementation review",
+    "confirmed_finding": "shared scan-budget exhaustion telemetry",
+    "resolution": "21-record RED reproduction and bounded fix"
+  },
+  "planner": {
+    "model": "openai-codex/gpt-6.1-terra",
+    "thinking": "high",
+    "input": "questions only and protocol",
+    "tool_access_verified": [
+      "PUA skill",
+      "Musk methodology",
+      "question-only file",
+      "own output artifact"
+    ]
+  },
+  "evidence_sha256": {
+    "historical-regression.json": "b6c4f174a4043fbc20a9e48da0144cad7f81abdd5ceee4fa14c8521a648b89df",
+    "synthetic-regression.json": "745e63a2cee197ae28e4fac25675d18b2ade76f8145ed008eee6c8f5f332c523",
+    "planned-results.json": "f8b318ec1763fbf887b1ed7dd5e6fa014e1fc8be283c5d68790b0c172fb4716f",
+    "independent-query-plans.json": "a064811ad88a0863f41c55bec05742f36b590dceed0c9ab5bafdfd264681a341",
+    "planner-tool-audit.json": "eb2298d6e53c7d823db036be0f8a4d21c53c656a0b60d06076f3ca423ad93e17",
+    "paired-performance.json": "89c9379f898ae2e5fdc04189430107d9ff8eca3ea6a5c1cba3d2a9eb6aeb8f7c",
+    "final-tests314.log": "a855cf8c4b0495e4e2f359f6dffd632814eee3e8f25191bfe75f69f19bad5f64",
+    "final-tests310.log": "acbb684835e4bc4067963d120af6c9f95cd4bd7e4087f5b27e92c31509b7f61d",
+    "build.log": "9191f7501afd8b578a1be03b21c9e2d6c549f88829f22f525ddee850cf0bfbb4",
+    "wheel-smoke.log": "07b4749a072df9eb618ae3dae5dd65e1b081d53c28db9b4e25c4878a27834e65",
+    "tested-source-manifest.json": "50de7b8e7799078f83df847a2958cae9e0171d85f504df3e13236dd0a02f454f",
+    "review-red.log": "c847027d318bf220f7b72324a8fe819bf81dd1f71143c861b8ab210848d816ef"
+  }
+}

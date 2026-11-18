@@ -321,6 +321,10 @@ def collect_active(store: Path) -> tuple[dict[str, Any], list[dict[str, Any]], l
 
 
 def cell_matches_record(cell: dict[str, Any], record: dict[str, Any]) -> bool:
+    # A custom cell without a scope may cover several projects. A generated
+    # global cell must not pick up a project override that uses the same key.
+    if cell.get("scope") == "global" and record.get("project_id") is not None:
+        return False
     if cell.get("project_id") and cell.get("project_id") != record.get("project_id"):
         return False
     key = str(record["key"])
@@ -367,7 +371,8 @@ def cell_vector_texts(
         (cell["title"], 5.0),
         (" ".join(cell.get("keywords") or []), 7.0),
         (" ".join(cell.get("aliases") or []), 6.0),
-        (" ".join(record_by_id[value]["key"] for value in member_record_ids), 3.0),
+        # Tokenization includes adjacent pairs. Opaque record IDs must not set key order.
+        (" ".join(sorted(record_by_id[rid]["key"] for rid in member_record_ids)), 3.0),
     ]
 
 
@@ -509,8 +514,14 @@ def ensure_fresh(index: dict[str, Any]) -> Path:
     return store
 
 
-def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str, Any]:
-    store = ensure_fresh(index)
+def rank_pointers(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str, Any]:
+    """Score index metadata only; callers must validate records before returning bodies."""
+    ensure_fresh(index)
+    return score_pointers(index, query, limit, cwd)
+
+
+def score_pointers(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str, Any]:
+    """Pure snapshot scoring. Caller owns freshness and selected-record validation."""
     dimensions = int(index["vectorizer"]["dimensions"])
     weights = feature_weight_map(index)
     query_vector = sparse_vector([(query, 1.0)], dimensions, weights)
@@ -572,9 +583,15 @@ def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str
     record_matches: dict[str, dict[str, list[str]]] = {
         record_id: {"cells": [], "nodes": []} for record_id in record_meta
     }
-    for cell_id in top_cells:
-        for record_id in cell_by_id[cell_id]["member_record_ids"]:
-            record_matches[record_id]["cells"].append(cell_id)
+    # Scatter each cell score once per membership, not once per record lookup.
+    # All cells contribute to the score; only top cells explain navigation.
+    record_cell_scores: dict[str, float] = {}
+    for cell_id, cell in cell_by_id.items():
+        score = cell_scores[cell_id]
+        for record_id in cell["member_record_ids"]:
+            record_cell_scores[record_id] = max(record_cell_scores.get(record_id, score), score)
+            if cell_id in top_cells:
+                record_matches[record_id]["cells"].append(cell_id)
     for uid, score in node_scores.items():
         if score <= 0:
             continue
@@ -587,14 +604,7 @@ def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str
             (node_scores.get(uid, 0.0) for uid in metadata.get("node_uids") or []),
             default=0.0,
         )
-        cell_score = max(
-            (
-                cell_scores.get(cell_id, 0.0)
-                for cell_id, cell in cell_by_id.items()
-                if record_id in cell["member_record_ids"]
-            ),
-            default=0.0,
-        )
+        cell_score = record_cell_scores.get(record_id, 0.0)
         key_text = normalize_text(metadata["key"])
         key_words = normalize_text(re.sub(r"[._:/+\-]+", " ", str(metadata["key"])))
         exact_key = bool(
@@ -660,13 +670,10 @@ def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str
     entries: list[dict[str, Any]] = []
     for record_id in selected:
         metadata = record_meta[record_id]
-        record = load_json(store / metadata["record_path"])
-        if record.get("id") != record_id or record.get("authority") != "accepted" or record.get("status") != "active":
-            raise VectorError(f"active record changed after vector indexing: {record_id}")
         project_id = metadata.get("project_id")
         entries.append(
             {
-                **record,
+                **metadata,
                 "vector_pointer": {
                     "score": round(record_scores[record_id], 8),
                     "score_components": {
@@ -694,12 +701,33 @@ def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path) -> dict[str
     }
 
 
+def ranked(index: dict[str, Any], query: str, limit: int, cwd: Path,
+           *, association_limit: int = 3) -> dict[str, Any]:
+    """Legacy full-record API; preserve its response and accepted-record checks."""
+    result = rank_pointers(index, query, limit, cwd)
+    store = Path(str(index["memory_graph_store"])).expanduser().resolve()
+    entries = []
+    for pointer in result["entries"]:
+        record = load_json(store / pointer["record_path"])
+        if (record.get("id") != pointer["id"] or record.get("authority") != "accepted"
+                or record.get("status") != "active"):
+            raise VectorError(f"active record changed after vector indexing: {pointer['id']}")
+        entries.append({**record, "vector_pointer": pointer["vector_pointer"]})
+    return {**result, "entries": entries}
+
+
 def load_evaluation_suite(path: Path) -> dict[str, Any]:
     suite = load_json(path.expanduser().resolve())
+    if not suite.get("cases"):
+        raise VectorError("recall evaluation suite requires at least one case")
+    return validate_evaluation_suite(suite)
+
+
+def validate_evaluation_suite(suite: dict[str, Any]) -> dict[str, Any]:
     if suite.get("schema_version") != 1 or suite.get("type") != EVALUATION_TYPE:
         raise VectorError("unsupported recall evaluation suite")
     cases = suite.get("cases")
-    if not isinstance(cases, list) or not cases:
+    if not isinstance(cases, list) or (not cases and suite.get("suite_id") != "generated-active-coverage"):
         raise VectorError("recall evaluation suite requires at least one case")
     seen: set[str] = set()
     for case in cases:
@@ -710,14 +738,68 @@ def load_evaluation_suite(path: Path) -> dict[str, Any]:
         expected = case.get("expected_keys")
         if not case_id or case_id in seen or not query:
             raise VectorError("recall evaluation case id/query is invalid")
-        if not isinstance(expected, list) or not expected or not all(expected):
+        expect_empty = case.get("expect_empty", False)
+        if type(expect_empty) is not bool:
+            raise VectorError(f"recall evaluation case {case_id} has invalid expect_empty")
+        if not isinstance(expected, list) or (not expected and not expect_empty):
             raise VectorError(f"recall evaluation case {case_id} needs expected_keys")
-        top_k = int(case.get("top_k", 5))
-        required_rank = int(case.get("required_rank", min(3, top_k)))
-        if top_k < 1 or top_k > 64 or required_rank < 1 or required_rank > top_k:
+        if expect_empty and (expected or case.get("relevant_keys") or case.get("expected_association_keys")):
+            raise VectorError(f"recall evaluation case {case_id} has conflicting abstention labels")
+        for field in ("expected_keys", "relevant_keys", "forbidden_keys",
+                      "expected_association_keys", "forbidden_association_keys"):
+            values = case.get(field, [])
+            if (not isinstance(values, list)
+                    or any(not isinstance(v, str) or not v or len(v) > 256 for v in values)
+                    or len(set(values)) != len(values)):
+                raise VectorError(f"recall evaluation case {case_id} has invalid {field}")
+        top_k = case.get("top_k", 5)
+        if type(top_k) is not int:
             raise VectorError(f"recall evaluation case {case_id} has invalid rank limits")
+        required_rank = case.get("required_rank", min(3, top_k))
+        if type(required_rank) is not int or top_k < 1 or top_k > 64 or required_rank < 1 or required_rank > top_k:
+            raise VectorError(f"recall evaluation case {case_id} has invalid rank limits")
+        association_limit = case.get("association_limit", 3)
+        if type(association_limit) is not int or not 0 <= association_limit <= 8:
+            raise VectorError(f"recall evaluation case {case_id} has invalid association_limit")
+        if len(case.get("expected_association_keys", [])) > association_limit:
+            raise VectorError(f"EVALUATION_LABEL_CONFLICT: {case_id} exceeds association budget")
         seen.add(case_id)
     return suite
+
+
+def validate_evaluation_suites(suites: list[dict[str, Any]]) -> None:
+    """Reject explicit incompatible labels for the same effective recall input.
+
+    This is a consistency preflight, not a judge of semantic label correctness.
+    Scope and requested budgets are part of the input; labels never alter them.
+    """
+    groups: dict[tuple, list] = {}
+    for suite in suites:
+        validate_evaluation_suite(suite)
+        for case in suite["cases"]:
+            identity = (str(case["query"]).strip(), str(case.get("project_id") or ""),
+                        max(case.get("top_k", 5), 3), case.get("association_limit", 3))
+            groups.setdefault(identity, []).append((suite.get("suite_id", ""), case))
+    for group in groups.values():
+        required_associations = set().union(*(set(c.get("expected_association_keys", [])) for _, c in group))
+        forbidden_associations = set().union(*(
+            set(c.get("forbidden_keys", [])) | set(c.get("forbidden_association_keys", [])) for _, c in group))
+        conflict = bool(required_associations & forbidden_associations)
+        conflict |= len(required_associations) > group[0][1].get("association_limit", 3)
+        conflict |= (any(c.get("expect_empty") for _, c in group)
+                     and any(c["expected_keys"] or c.get("expected_association_keys") for _, c in group))
+        for _, left in group:
+            expected = set(left["expected_keys"])
+            rank = left.get("required_rank", min(3, left.get("top_k", 5)))
+            for _, right in group:
+                if rank <= right.get("top_k", 5):
+                    conflict |= bool(expected and expected <= set(right.get("forbidden_keys", [])))
+                if rank == right.get("required_rank", min(3, right.get("top_k", 5))) == 1:
+                    conflict |= bool(expected and right["expected_keys"]
+                                     and not expected.intersection(right["expected_keys"]))
+        if conflict:
+            labels = ", ".join(f"{name}/{case['id']}" for name, case in group)
+            raise VectorError(f"EVALUATION_LABEL_CONFLICT: incompatible labels for {labels}")
 
 
 def evaluation_summary(report: dict[str, Any]) -> dict[str, Any]:
@@ -740,20 +822,56 @@ def evaluation_cwd(index: dict[str, Any], project_id: str | None) -> Path:
     return Path(str(project["root"]))
 
 
+def evaluation_diagnostics(cases: list[dict[str, Any]], association_cases: int) -> dict[str, Any]:
+    """Partition observed outcomes, not root causes; never change quality gates."""
+    outcomes = dict.fromkeys(("within_required_rank", "all_expectations_source_blocked",
+                              "partial_source_block_unresolved", "scan_budget_exhausted_unresolved",
+                              "unexplained_miss"), 0)
+    for case in cases:
+        if case.get("expect_empty"):
+            outcome = "correct_abstention" if case["abstained"] else "unexpected_results"
+            outcomes[outcome] = outcomes.get(outcome, 0) + 1
+            continue
+        rank = case["first_expected_rank"]
+        expected = set(case["expected_keys"])
+        blocked = set(case["source_blocked_expected_keys"])
+        if rank is not None and rank <= case["required_rank"]:
+            outcome = "within_required_rank"
+        elif expected and expected <= blocked:
+            outcome = "all_expectations_source_blocked"
+        elif case["scan_budget_exhausted"]:
+            outcome = "scan_budget_exhausted_unresolved"
+        elif blocked:
+            outcome = "partial_source_block_unresolved"
+        else:
+            outcome = "unexplained_miss"
+        outcomes[outcome] += 1
+    return {
+        "primary_outcomes": outcomes,
+        "failed_case_count": sum(not case["passed"] for case in cases),
+        "scan_budget_exhausted_case_count": sum(case["scan_budget_exhausted"] for case in cases),
+        "positive_association_case_count": association_cases,
+        "positive_association_coverage": "PRESENT" if association_cases else "ABSENT",
+        "note": "Diagnostic observations only; source blocks are not hits; quality gates unchanged.",
+    }
+
+
 def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None) -> dict[str, Any]:
     ensure_fresh(index)
-    if suite.get("schema_version") != 1 or suite.get("type") != EVALUATION_TYPE:
-        raise VectorError("unsupported recall evaluation suite")
+    validate_evaluation_suites([suite])
     raw_cases = suite.get("cases") or []
-    if not raw_cases and suite.get("suite_id") != "generated-active-coverage":
-        raise VectorError("recall evaluation suite requires at least one case")
     thresholds = {
         "min_top1": 0.0,
         "min_hit_at_3": 1.0,
         "min_mrr": 0.0,
         "min_precision_at_k": 0.0,
+        "min_recall_at_k": 0.0,
+        "min_abstention_rate": 0.0,
         "max_forbidden_hits": 0,
         "max_scope_violations": 0,
+        "min_association_hit_rate": 0.0,
+        "max_association_forbidden_hits": 0,
+        "max_association_scope_violations": 0,
         **(suite.get("thresholds") or {}),
     }
     case_reports: list[dict[str, Any]] = []
@@ -761,13 +879,25 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
     top3_hits = 0
     reciprocal_rank_total = 0.0
     precision_total = 0.0
+    recall_total = 0.0
+    positive_count = 0
+    abstention_count = 0
+    abstention_hits = 0
     forbidden_hits = 0
     scope_violations = 0
+    association_forbidden_hits = 0
+    association_scope_violations = 0
+    association_cases = 0
+    association_hits = 0
+    source_blocked_cases = 0
     result_count_total = 0
     for case in raw_cases:
         case_id = str(case["id"])
         top_k = int(case.get("top_k", 5))
         required_rank = int(case.get("required_rank", min(3, top_k)))
+        expect_empty = case.get("expect_empty", False)
+        positive_count += not expect_empty
+        abstention_count += expect_empty
         expected = {str(value) for value in case["expected_keys"]}
         relevant = {str(value) for value in case.get("relevant_keys") or expected}
         forbidden = {str(value) for value in case.get("forbidden_keys") or []}
@@ -777,6 +907,7 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
             str(case["query"]),
             max(top_k, required_rank, 3),
             evaluation_cwd(index, project_id),
+            **({"association_limit": case["association_limit"]} if "association_limit" in case else {}),
         )
         keys = [str(entry["key"]) for entry in result["entries"]]
         result_count_total += len(keys[:top_k])
@@ -790,7 +921,10 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
         reciprocal_rank_total += 1.0 / first_rank if first_rank else 0.0
         considered = keys[:top_k]
         precision = len(relevant & set(considered)) / max(1, len(considered))
-        precision_total += precision
+        recall = len(relevant & set(considered)) / max(1, len(relevant))
+        if not expect_empty:
+            precision_total += precision
+            recall_total += recall
         case_forbidden = sorted(forbidden & set(considered))
         forbidden_hits += len(case_forbidden)
         case_scope: list[str] = []
@@ -800,6 +934,29 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
                 if entry_project and entry_project != project_id:
                     case_scope.append(str(entry["key"]))
             scope_violations += len(case_scope)
+        associated = result.get("associations", [])
+        abstained = not keys and not associated
+        abstention_hits += expect_empty and abstained
+        association_keys = {str(entry["key"]) for entry in associated}
+        expected_associations = set(case.get("expected_association_keys", []))
+        missing_associations = sorted(expected_associations - association_keys)
+        association_cases += bool(expected_associations)
+        association_hits += bool(expected_associations) and not missing_associations
+        forbidden_associations = sorted(
+            (forbidden | set(case.get("forbidden_association_keys", []))) & association_keys
+        )
+        association_scope = sorted({str(entry["key"]) for entry in associated
+                                    if case.get("forbid_cross_project")
+                                    and entry.get("project_id")
+                                    and entry["project_id"] != project_id})
+        association_forbidden_hits += len(forbidden_associations)
+        association_scope_violations += len(association_scope)
+        # Explain blocked expectations without copying historical bodies, changing
+        # labels, or counting a safe abstention as a successful retrieval.
+        blocked = sorted(expected & {str(entry["key"])
+                         for entry in result.get("needs_review", [])
+                         if entry.get("source_freshness", {}).get("current_use_allowed") is False})
+        source_blocked_cases += bool(blocked)
         case_reports.append(
             {
                 "id": case_id,
@@ -809,10 +966,22 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
                 "returned_keys": considered,
                 "first_expected_rank": first_rank,
                 "required_rank": required_rank,
-                "precision_at_k": round(precision, 8),
+                "precision_at_k": round(precision, 8) if not expect_empty else None,
+                "recall_at_k": round(recall, 8) if not expect_empty else None,
+                "expect_empty": expect_empty,
+                "abstained": abstained,
                 "forbidden_hits": case_forbidden,
                 "scope_violations": case_scope,
-                "passed": within_required and not case_forbidden and not case_scope,
+                "returned_association_keys": sorted(association_keys),
+                "missing_association_keys": missing_associations,
+                "association_forbidden_hits": forbidden_associations,
+                "association_scope_violations": association_scope,
+                "source_blocked_expected_keys": blocked,
+                "scan_budget_exhausted": bool(result.get("retrieval", {}).get("scan_budget_exhausted")),
+                "passed": ((abstained if expect_empty else within_required)
+                           and not case_forbidden and not case_scope
+                           and not missing_associations and not forbidden_associations
+                           and not association_scope),
             }
         )
     count = len(case_reports)
@@ -840,25 +1009,45 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
             ),
             "case_count": 0,
             "metrics": metrics,
+            "diagnostics": evaluation_diagnostics([], 0),
             "thresholds": thresholds,
             "cases": [],
         }
     metrics = {
-        "top1": round(top1_hits / count, 8),
-        "hit_at_3": round(top3_hits / count, 8),
-        "mrr": round(reciprocal_rank_total / count, 8),
-        "mean_precision_at_k": round(precision_total / count, 8),
+        "positive_case_count": positive_count,
+        "abstention_case_count": abstention_count,
+        "abstention_rate": round(abstention_hits / abstention_count, 8) if abstention_count else None,
+        "top1": round(top1_hits / positive_count, 8) if positive_count else None,
+        "association_case_count": association_cases,
+        "association_hit_rate": round(association_hits / association_cases, 8) if association_cases else None,
+        "association_forbidden_hits": association_forbidden_hits,
+        "association_scope_violations": association_scope_violations,
+        "source_blocked_case_count": source_blocked_cases,
+        "hit_at_3": round(top3_hits / positive_count, 8) if positive_count else None,
+        "mrr": round(reciprocal_rank_total / positive_count, 8) if positive_count else None,
+        "mean_precision_at_k": round(precision_total / positive_count, 8) if positive_count else None,
+        "mean_recall_at_k": round(recall_total / positive_count, 8) if positive_count else None,
         "forbidden_hits": forbidden_hits,
         "scope_violations": scope_violations,
         "average_results": round(result_count_total / count, 8),
     }
     passed = (
-        metrics["top1"] >= float(thresholds["min_top1"])
-        and metrics["hit_at_3"] >= float(thresholds["min_hit_at_3"])
-        and metrics["mrr"] >= float(thresholds["min_mrr"])
-        and metrics["mean_precision_at_k"] >= float(thresholds["min_precision_at_k"])
+        (not positive_count or (
+            metrics["top1"] >= float(thresholds["min_top1"])
+            and metrics["hit_at_3"] >= float(thresholds["min_hit_at_3"])
+            and metrics["mrr"] >= float(thresholds["min_mrr"])
+            and metrics["mean_precision_at_k"] >= float(thresholds["min_precision_at_k"])
+            and metrics["mean_recall_at_k"] >= float(thresholds["min_recall_at_k"])))
+        and (float(thresholds["min_abstention_rate"]) == 0
+             or (abstention_count > 0 and abstention_hits / abstention_count
+                 >= float(thresholds["min_abstention_rate"])))
         and forbidden_hits <= int(thresholds["max_forbidden_hits"])
         and scope_violations <= int(thresholds["max_scope_violations"])
+        and association_forbidden_hits <= int(thresholds["max_association_forbidden_hits"])
+        and association_scope_violations <= int(thresholds["max_association_scope_violations"])
+        and (float(thresholds["min_association_hit_rate"]) == 0
+             or (association_cases > 0 and association_hits / association_cases
+                 >= float(thresholds["min_association_hit_rate"])))
         and all(case["passed"] for case in case_reports)
     )
     return {
@@ -873,6 +1062,7 @@ def evaluate_index(index: dict[str, Any], suite: dict[str, Any], *, ranker=None)
         "scoring_profile": copy.deepcopy(index.get("scoring_profile") or LEGACY_SCORING_PROFILE),
         "case_count": count,
         "metrics": metrics,
+        "diagnostics": evaluation_diagnostics(case_reports, association_cases),
         "thresholds": thresholds,
         "cases": case_reports,
     }
@@ -929,10 +1119,10 @@ def quality_order(report: dict[str, Any]) -> tuple[float, ...]:
         float(bool(report["passed"])),
         -float(metrics["forbidden_hits"]),
         -float(metrics["scope_violations"]),
-        float(metrics["top1"]),
-        float(metrics["hit_at_3"]),
-        float(metrics["mrr"]),
-        float(metrics["mean_precision_at_k"]),
+        float(metrics["top1"] or 0),
+        float(metrics["hit_at_3"] or 0),
+        float(metrics["mrr"] or 0),
+        float(metrics["mean_precision_at_k"] or 0),
         -float(metrics["average_results"]),
     )
 

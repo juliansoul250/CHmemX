@@ -27,6 +27,13 @@ except ImportError:
     import source_freshness
 
 TYPE = "memorygraph-hybrid-pointer-v3"
+CHUNKING_RECIPE = "sentence-token-overflow-v1"
+ENGLISH_FUNCTION_WORDS = frozenset(
+    "a an the and or but if of to in on at by for from with as is are was were be been "
+    "do does did have has had can could should would will shall may might must "
+    "what which who whom whose when where why how much many i me my we our you your "
+    "it its this that these those about please tell".split()
+)
 STRICT = dict(
     name="strict-v3",
     record_weight=0.78,
@@ -61,8 +68,14 @@ def git(root: Path, *args: str) -> bytes:
 
 
 def clean_head(root: Path) -> str:
-    if git(root, "status", "--porcelain=v1", "--untracked-files=no").strip():
+    lines = git(root, "status", "--porcelain=v2", "--branch", "--untracked-files=no").splitlines()
+    if any(line and not line.startswith(b"# ") for line in lines):
         raise ValueError("STORE_DIRTY: canonical tracked files have uncommitted changes")
+    head = next((line.removeprefix(b"# branch.oid ") for line in lines
+                 if line.startswith(b"# branch.oid ")), b"")
+    if head and head != b"(initial)":
+        return head.decode()
+    # Preserve Git's error behavior for unborn repositories; normal snapshots use one process.
     return git(root, "rev-parse", "HEAD").decode().strip()
 
 
@@ -141,12 +154,16 @@ class LocalEncoder:
         return pooled.tolist()
 
     def chunks(self, text: str) -> list[str]:
-        # Token overflow preserves the tail of long contracts instead of silently truncating it.
-        encoded = self.tokenizer.encode(text)
-        return [
-            self.tokenizer.decode(e.ids, skip_special_tokens=True)
-            for e in [encoded, *encoded.overflowing]
-        ]
+        # Keep independent statements apart. Token overflow still retains every
+        # long sentence's tail; retrieval always returns the full approved body.
+        chunks = []
+        for sentence in re.split(r"(?<=[。！？!?;；])|(?<=\.)\s+|\n+", text):
+            if not sentence.strip():
+                continue
+            encoded = self.tokenizer.encode(sentence.strip())
+            chunks.extend(self.tokenizer.decode(e.ids, skip_special_tokens=True)
+                          for e in [encoded, *encoded.overflowing])
+        return chunks
 
 
 def build(
@@ -239,7 +256,8 @@ def build(
         for meta in base["records"]:
             # Titles and hand-written search hints are excluded from semantic encoding:
             # the approved body is the factual source.
-            key = digest({"body": raw_bodies[meta["id"]], "model_lock": encoder.lock})
+            key = digest({"body": raw_bodies[meta["id"]], "model_lock": encoder.lock,
+                          "chunking_recipe": CHUNKING_RECIPE})
             meta["embedding_input_digest"] = key
             if cache.get(key):
                 dense.extend({"record_id": meta["id"], "vector": v} for v in cache[key])
@@ -269,6 +287,7 @@ def build(
             "dense_window": 0.08,
             "model_directory": str(model_dir.resolve()) if model_dir else None,
             "model_lock": encoder.lock if encoder else None,
+            "chunking_recipe": CHUNKING_RECIPE if encoder else None,
             "document_frequency": dict(df),
             "chunks": dense,
         },
@@ -305,6 +324,23 @@ class Retriever:
         self.lexical["type"] = lexical.INDEX_TYPE
         self.lexical["scoring_profile"]["absolute_threshold"] = 0
         self.lexical["scoring_profile"]["relative_threshold"] = 0
+        self._dense_matrix = None
+        self.body_terms = {}
+        self.navigation_terms = {}
+        self.key_phrases = {}
+        for rid, meta in self.records.items():
+            # BM25 counts include body + key. Remove key components: a generic
+            # namespace such as 'service' is not evidence about an invoice service.
+            self.body_terms[rid] = set(Counter(meta["lexical_counts"]) - words(meta["key"]))
+            texts = [meta["key"], *meta.get("hints", [])]
+            for uid in meta["node_uids"]:
+                node = self.nodes[uid]
+                texts.extend([node["title"], *node.get("keywords", []), *node.get("aliases", [])])
+            self.navigation_terms[rid] = {term for text in texts for term in lexical.text_tokens(text)}
+            self.key_phrases[rid] = (
+                lexical.normalize_text(meta["key"]),
+                lexical.normalize_text(re.sub(r"[._:/+\-]+", " ", meta["key"])),
+            )
 
     def verify(self):
         if clean_head(self.store) != self.index["memory_graph_head"]:
@@ -383,35 +419,106 @@ class Retriever:
             )
         return r
 
-    def recall(self, query: str, cwd: Path, limit: int = 5, association_limit: int = 3) -> dict:
-        if not isinstance(query, str) or len(query) > 8192:
-            raise ValueError("QUERY_INVALID")
-        if type(limit) != int or not 1 <= limit <= 20:
-            raise ValueError("LIMIT_INVALID")
-        if type(association_limit) != int or not 0 <= association_limit <= 8:
-            raise ValueError("ASSOCIATION_LIMIT_INVALID")
+    def recall(self, query: str, cwd: Path, limit: int = 5, association_limit: int = 3,
+               *, query_plan: dict | None = None) -> dict:
+        from chmemx import query_plan as plans
+
+        plan = plans.validate(query, query_plan, limit=limit, association_limit=association_limit)
+        if plan is not None:
+            stopped = plans.decision_result(plan)
+            if stopped:
+                return stopped
         self.verify()
+        if plan is None:
+            result = self._deliver(self._rank_pointers(query, cwd), limit, association_limit)
+            result["understanding"] = {"status": "literal_compatibility",
+                                       "interpretation_verified": False, "answer_support": "not_assessed"}
+            return result
+        # Only the original request may route scope. Facets cannot enable the
+        # unknown-context lexical fallback or introduce a foreign project.
+        allowed = self.allowed(query, self.project(cwd))
+        facets = [{"id": "original", "query": query}, *plan["facets"]]
+        ranked = [self._rank_pointers(f["query"], cwd, allowed_projects=allowed) for f in facets]
+        maximum = min(100, max(20, limit * 5))
+        order, seen = [], set()
+        for position in range(maximum):
+            for ranking in ranked:
+                if position < len(ranking["order"]):
+                    rid = ranking["order"][position]
+                    if rid not in seen and len(order) < maximum:
+                        seen.add(rid)
+                        order.append(rid)
+        truncated = len(set().union(*(set(r["order"]) for r in ranked))) > len(order)
+        merged = {**ranked[0], "order": order, "candidate_union_truncated": truncated}
+        for field in ("sparse", "bm", "dense", "fused"):
+            merged[field] = {rid: max(r[field].get(rid, 0) for r in ranked)
+                             for rid in merged["eligible"]}
+        result = self._deliver(merged, limit, association_limit)
+        returned = {r["id"] for r in result["entries"]}
+        for record in result["entries"]:
+            record["vector_pointer"]["query_ids"] = [f["id"] for f, r in zip(facets, ranked)
+                                                       if record["id"] in r["order"]]
+        result["understanding"] = {
+            "status": "caller_interpreted", "goal": plan["goal"],
+            "entities": plan["entities"], "constraints": plan["constraints"],
+            "interpretation_verified": False, "answer_support": "not_assessed",
+            "facets": [{"id": f["id"], "returned_candidate_ids": [rid for rid in r["order"] if rid in returned],
+                        "candidate_count": len(r["order"]), "dense_window_exceeded": r["dense_window_exceeded"]}
+                       for f, r in zip(facets, ranked)],
+            "scope_policy": "original-query ceiling; no facet scope expansion",
+            "candidate_union_truncated": truncated,
+        }
+        result["retrieval"]["method"] = "planned-pointer-interleave"
+        result["retrieval"]["scope_mode"] = "original-query-ceiling"
+        result["retrieval"]["score_meaning"] = "maximum per-query score; not answer confidence"
+        return result
+
+    def _rank_pointers(self, query: str, cwd: Path, *, allowed_projects=None) -> dict:
         current = self.project(cwd)
-        allowed = self.allowed(query, current)
-        old = lexical.ranked(self.lexical, query, len(self.records) or 1, cwd)
+        allowed = self.allowed(query, current) if allowed_projects is None else allowed_projects
+        # Score pointers first. Only bounded, scoped candidates below may open bodies.
+        old = lexical.score_pointers(self.lexical, query, len(self.records) or 1, cwd)
+        q = words(query)
+        query_terms = set(lexical.text_tokens(query))
+        query_text = lexical.normalize_text(query)
+        evidence = {
+            rid for rid in self.records
+            if self.body_terms[rid].intersection(q)
+            or self.navigation_terms[rid].intersection(query_terms)
+            or any(phrase and phrase in query_text for phrase in self.key_phrases[rid])
+        }
+        # A single shared topic cannot make a multi-content-word English query
+        # trustworthy (e.g. editor theme versus editor subscription cost). This
+        # is lexical coverage, not general entailment or a multilingual parser.
+        if not re.search(r"[\u3400-\u9fff]", query_text):
+            content = set(re.findall(r"[a-z][a-z0-9_]+", query_text)) - ENGLISH_FUNCTION_WORDS
+            if len(content) > 1:
+                content_words = {term: set(words(term)) for term in content}
+                evidence = {
+                    rid for rid in evidence
+                    if any(phrase and phrase in query_text for phrase in self.key_phrases[rid])
+                    or sum(bool(self.body_terms[rid].intersection(hashed))
+                           or term in self.navigation_terms[rid]
+                           for term, hashed in content_words.items()) * 2 >= len(content)
+                }
         eligible = {rid for rid, m in self.records.items() if m.get("project_id") in allowed}
         # Resolve scope before comparing scores from differently scoped records.
         # An unrequested project's short text must not displace a global match.
         scoped_match = any(
-            e["id"] in eligible and e["vector_pointer"]["score"] >= 0.17
+            e["id"] in eligible and e["id"] in evidence and e["vector_pointer"]["score"] >= 0.17
             for e in old["entries"]
         )
-        if current is None and allowed == {None} and not scoped_match:
-            best = max((e["vector_pointer"]["score"] for e in old["entries"]), default=0)
+        if allowed_projects is None and current is None and allowed == {None} and not scoped_match:
+            best = max((e["vector_pointer"]["score"] for e in old["entries"]
+                        if e["id"] in evidence), default=0)
             eligible.update(
                 e["id"]
                 for e in old["entries"]
-                if e["vector_pointer"]["score"] >= max(0.17, best * 0.5)
+                if e["id"] in evidence and e["vector_pointer"]["score"] >= max(0.17, best * 0.5)
             )
         sparse = {
             e["id"]: e["vector_pointer"]["score"] for e in old["entries"] if e["id"] in eligible
         }
-        q = words(query)
         count = len(self.records)
         avg = sum(m["lexical_length"] for m in self.records.values()) / max(count, 1)
         bm = {}
@@ -431,11 +538,16 @@ class Retriever:
                     )
             bm[rid] = score
         dense = {rid: 0.0 for rid in eligible}
-        if self.encoder and query.strip():
+        # Planned queries must not silently lose late conditions to the encoder's
+        # token window. Keep full lexical search, report skipped dense scoring.
+        window_exceeded = bool(allowed_projects is not None and self.encoder
+                               and self.encoder.tokenizer.encode(query).overflowing)
+        if self.encoder and query.strip() and not window_exceeded:
             vec = self.encoder.np.asarray(self.encoder.encode([query])[0])
             chunks = self.index["hybrid"]["chunks"]
-            matrix = self.encoder.np.asarray([c["vector"] for c in chunks])
-            sims = matrix @ vec if len(chunks) else []
+            if chunks and self._dense_matrix is None:
+                self._dense_matrix = self.encoder.np.asarray([c["vector"] for c in chunks])
+            sims = self._dense_matrix @ vec if chunks else []
             for chunk, score in zip(chunks, sims):
                 if chunk["record_id"] in eligible:
                     rid = chunk["record_id"]
@@ -450,7 +562,7 @@ class Retriever:
             if any(scores.values())
         ]
         fused = {rid: sum(1 / (60 + r[rid]) for r in ranks if rid in r) for rid in eligible}
-        best_sparse = max(sparse.values(), default=0)
+        best_sparse = max((score for rid, score in sparse.items() if rid in evidence), default=0)
         best_dense = max(dense.values(), default=0)
         exact = {
             rid for rid in eligible if self.records[rid]["key"] in lexical.normalize_text(query)
@@ -458,7 +570,7 @@ class Retriever:
         trusted = {
             rid
             for rid in eligible
-            if rid in exact or sparse.get(rid, 0) >= max(0.17, best_sparse * 0.5)
+            if rid in exact or (rid in evidence and sparse.get(rid, 0) >= max(0.17, best_sparse * 0.5))
         }
         semantic = {
             rid
@@ -478,6 +590,14 @@ class Retriever:
                 semantic,
                 key=lambda rid: (-fused[rid], -dense.get(rid, 0), self.records[rid]["key"]),
             )
+        return {"order": order, "eligible": eligible, "sparse": sparse, "bm": bm,
+                "dense": dense, "fused": fused, "current": current,
+                "dense_window_exceeded": window_exceeded}
+
+    def _deliver(self, ranking: dict, limit: int, association_limit: int) -> dict:
+        order, eligible = ranking["order"], ranking["eligible"]
+        sparse, bm, dense = ranking["sparse"], ranking["bm"], ranking["dense"]
+        fused, current = ranking["fused"], ranking["current"]
         chosen = []
         entries = []
         needs_review = []
@@ -586,7 +706,7 @@ class Retriever:
                 "candidates_checked": scanned,
                 "scan_budget_exhausted": scanned >= scan_limit
                 and len(chosen) < limit
-                and len(order) > scanned,
+                and (len(order) > scanned or ranking.get("candidate_union_truncated", False)),
                 "scope_mode": "current-plus-explicit-reference"
                 if current
                 else "unknown-context-with-labeled-lexical-references",
@@ -609,6 +729,7 @@ def main():
     r.add_argument("--query", required=True)
     r.add_argument("--cwd", default=str(Path.cwd()))
     r.add_argument("--limit", type=int, default=5)
+    r.add_argument("--query-plan", type=Path, help="Caller-understood plan JSON; no implicit literal fallback")
     args = p.parse_args()
     try:
         if args.command == "build":
@@ -634,9 +755,14 @@ def main():
                 "output": args.output,
             }
         else:
-            result = Retriever(json.loads(Path(args.index).read_text(encoding="utf-8"))).recall(
-                args.query, Path(args.cwd), args.limit
-            )
+            from chmemx import query_plan
+            plan = query_plan.validate(args.query, query_plan.load(args.query_plan) if args.query_plan else None,
+                                       limit=args.limit)
+            result = query_plan.decision_result(plan)
+            if result is None:
+                result = Retriever(json.loads(Path(args.index).read_text(encoding="utf-8"))).recall(
+                    args.query, Path(args.cwd), args.limit, query_plan=plan
+                )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except Exception as e:

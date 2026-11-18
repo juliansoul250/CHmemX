@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chmemx.invalid/schemas/knowledge-graph-candidate-v1",
+  "title": "Experimental evidence-bound graph candidate, not approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "entities", "relations"],
+  "properties": {
+    "schema_version": {"const": 1, "type": "integer"},
+    "entities": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/entity"}},
+    "relations": {"type": "array", "maxItems": 512, "items": {"$ref": "#/$defs/relation"}}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S"},
+    "recordIds": {
+      "type": "array", "maxItems": 16, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "date": {"type": "string", "format": "date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "entity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "type", "name", "project_id", "record_ids"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text"},
+        "type": {"enum": ["Project", "Tool", "Role", "Rule", "Evidence", "Concept"]},
+        "name": {"$ref": "#/$defs/text"},
+        "project_id": {"anyOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]},
+        "record_ids": {"allOf": [{"$ref": "#/$defs/recordIds"}, {"minItems": 1}]},
+        "aliases": {"$ref": "#/$defs/recordIds"},
+        "condition_record_ids": {"$ref": "#/$defs/recordIds"}
+      }
+    },
+    "relation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "type", "from", "to", "evidence_record_id", "evidence_sha256", "valid_from"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text"},
+        "type": {"enum": ["uses", "depends_on", "responsible_for", "constrained_by", "supported_by", "related_to"]},
+        "from": {"$ref": "#/$defs/text"},
+        "to": {"$ref": "#/$defs/text"},
+        "evidence_record_id": {"$ref": "#/$defs/text"},
+        "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "valid_from": {"$ref": "#/$defs/date"},
+        "valid_until": {"anyOf": [{"$ref": "#/$defs/date"}, {"type": "null"}]},
+        "condition_record_ids": {"$ref": "#/$defs/recordIds"}
+      }
+    }
+  }
+}

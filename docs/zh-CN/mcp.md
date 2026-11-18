@@ -35,10 +35,14 @@ args = ["--store", "/absolute/private-memory", "--cwd", "/absolute/git-project",
 
 ## 三个日常工具
 
+**当前工作树未发布变更：** 检索前先由调用 Agent 理解问题，提交 `query_plan`。
+缺少计划返回 `NEEDS_UNDERSTANDING`，不搜索、不加载编码模型；`start(query=...)` 同样受此约束。
+参见[理解前置协议与迁移说明](../understanding-first.md)。已有 Pi/其他客户端适配器必须先支持透传计划，不能只升级服务端。
+
 | 工具 | 传什么 | 返回什么 |
 |---|---|---|
-| `start` | 可选 query | 当前项目、政策、来源统计、可选召回 |
-| `recall` | query、可选 limit（1～20） | 已生效记忆、来源标记、项目范围和关联节点 |
+| `start` | 可选 query + query_plan | 当前项目、政策、来源统计、可选召回 |
+| `recall` | query、query_plan、可选 limit（1～20） | 已生效记忆、来源标记、项目范围和关联节点 |
 | `upload` | key、字符串 value、source | 重复、待审、冲突、隔离或单人政策下已保存 |
 
 全局偏好示例：

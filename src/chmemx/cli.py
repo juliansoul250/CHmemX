@@ -69,6 +69,10 @@ def main():
     restore.add_argument("--destination", type=Path, required=True)
     recall = sub.add_parser("recall")
     recall.add_argument("query")
+    recall.add_argument("--limit", type=int, default=5)
+    recall.add_argument("--body-limit", type=int, help="Optional body preview in characters (256–16384)")
+    recall.add_argument("--association-limit", type=int, default=3)
+    recall.add_argument("--query-plan", type=Path, help="Caller-understood plan JSON; missing plan does not search")
     review = sub.add_parser("review")
     review.add_argument("upload_id")
     review.add_argument("--refresh", action="store_true")
@@ -130,7 +134,10 @@ def main():
         elif args.command == "restore-backup":
             result = service.runtime.restore_backup(args.directory, args.destination)
         elif args.command == "recall":
-            result = service.recall(args.query)
+            from . import query_plan
+            result = service.recall_understood(args.query, args.limit, body_limit=args.body_limit,
+                                              association_limit=args.association_limit,
+                                              query_plan=query_plan.load(args.query_plan) if args.query_plan else None)
         elif args.command == "review":
             result = service.review(args.upload_id, refresh=args.refresh)
         elif args.command == "trust-source":

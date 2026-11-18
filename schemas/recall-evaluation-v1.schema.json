@@ -16,8 +16,13 @@
         "min_hit_at_3": {"type": "number", "minimum": 0, "maximum": 1},
         "min_mrr": {"type": "number", "minimum": 0, "maximum": 1},
         "min_precision_at_k": {"type": "number", "minimum": 0, "maximum": 1},
+        "min_recall_at_k": {"type": "number", "minimum": 0, "maximum": 1},
+        "min_abstention_rate": {"type": "number", "minimum": 0, "maximum": 1},
         "max_forbidden_hits": {"type": "integer", "minimum": 0},
-        "max_scope_violations": {"type": "integer", "minimum": 0}
+        "max_scope_violations": {"type": "integer", "minimum": 0},
+        "min_association_hit_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "max_association_forbidden_hits": {"type": "integer", "minimum": 0},
+        "max_association_scope_violations": {"type": "integer", "minimum": 0}
       }
     },
     "cases": {
@@ -27,7 +32,17 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["id", "query", "expected_keys"],
+        "allOf": [{
+          "if": {"properties": {"expect_empty": {"const": true}}, "required": ["expect_empty"]},
+          "then": {"properties": {
+            "expected_keys": {"maxItems": 0},
+            "relevant_keys": {"maxItems": 0},
+            "expected_association_keys": {"maxItems": 0}
+          }},
+          "else": {"properties": {"expected_keys": {"minItems": 1}}}
+        }],
         "properties": {
+          "expect_empty": {"type": "boolean"},
           "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{2,95}$"},
           "query": {"type": "string", "minLength": 1, "maxLength": 1024},
           "project_id": {
@@ -38,11 +53,20 @@
           },
           "expected_keys": {
             "type": "array",
-            "minItems": 1,
             "uniqueItems": true,
             "items": {"type": "string", "minLength": 1, "maxLength": 256}
           },
           "relevant_keys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1, "maxLength": 256}
+          },
+          "expected_association_keys": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1, "maxLength": 256}
+          },
+          "forbidden_association_keys": {
             "type": "array",
             "uniqueItems": true,
             "items": {"type": "string", "minLength": 1, "maxLength": 256}
@@ -52,6 +76,7 @@
             "uniqueItems": true,
             "items": {"type": "string", "minLength": 1, "maxLength": 256}
           },
+          "association_limit": {"type": "integer", "minimum": 0, "maximum": 8},
           "top_k": {"type": "integer", "minimum": 1, "maximum": 64},
           "required_rank": {"type": "integer", "minimum": 1, "maximum": 64},
           "forbid_cross_project": {"type": "boolean"}

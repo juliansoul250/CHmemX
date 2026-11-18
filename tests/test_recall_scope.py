@@ -94,6 +94,17 @@ class RecallScopeAcceptance(unittest.TestCase):
             ["simple code", "code review"],
         )
 
+    def test_generated_global_cell_excludes_project_record_with_identical_key(self):
+        key = "preference.binding.placement"
+        self.remember(key, "General binder storage is on the left.", "global", ["binder storage"])
+        self.remember(key, "Atlas binder storage is on the right.", "project", ["binder shelf"])
+        self.service.rebuild()
+        index = core.load_json(self.service.index_path)
+        owners = {r["id"]: r["project_id"] for r in index["records"]}
+        self.assertEqual(len(index["cells"]), 2)
+        for cell in index["cells"]:
+            self.assertEqual([owners[rid] for rid in cell["member_record_ids"]], [cell["project_id"]])
+
     def test_unknown_context_keeps_global_guidance_free_of_unrequested_projects(self):
         self.seed_review_rules()
         result = self.reader.recall("external code review necessary fixes simple code", 5)
@@ -188,6 +199,9 @@ class RecallScopeAcceptance(unittest.TestCase):
                         "recall",
                         {
                             "query": "external code review necessary fixes simple code",
+                            "query_plan": {"version": 1, "query": "external code review necessary fixes simple code",
+                                           "decision": "search", "goal": "Find the general external review workflow.",
+                                           "entities": [], "constraints": [], "facets": []},
                             "limit": 5,
                         },
                     )

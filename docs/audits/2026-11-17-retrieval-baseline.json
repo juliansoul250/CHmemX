@@ -1,0 +1,1531 @@
+{
+  "status": "PARTIAL_AUDIT_NO_OPTIMIZATION_IMPLEMENTED",
+  "production_store_changed": false,
+  "dense_model_tested": false,
+  "verification": {
+    "python_3_14_6": {
+      "tests": 250,
+      "seconds": 117.825,
+      "exit_code": 0
+    },
+    "python_3_10_1": {
+      "tests": 250,
+      "seconds": 84.385,
+      "exit_code": 0
+    },
+    "ruff": "PASS",
+    "build": "PASS",
+    "installed_wheel_smoke": "INSTALLED_WHEEL_MCP_LIFECYCLE_PASS"
+  },
+  "quality": {
+    "fixture_sha256": "cc45de3689f6ed24ce0a9badab2137867a8ede2af3d0ea3b33fb5979c3d6519b",
+    "index_sha256": "6c4d79cb5ba0a8ade32ec3bbdeb240a341d88c9256bca04499ca158e8938c084",
+    "store_head": "9356e5d00603aa10b48385cabf2d4ebb4d9998a9",
+    "backend": "lexical v3, dense disabled",
+    "independent_holdout": false,
+    "build_seconds": 0.4521572919911705,
+    "summary": {
+      "abstention": {
+        "passed": 2,
+        "total": 4
+      },
+      "crosslingual": {
+        "passed": 0,
+        "total": 2
+      },
+      "exact": {
+        "passed": 16,
+        "total": 16
+      },
+      "natural": {
+        "passed": 16,
+        "total": 16
+      },
+      "paraphrase": {
+        "passed": 0,
+        "total": 2
+      },
+      "pending": {
+        "passed": 1,
+        "total": 1
+      },
+      "scope": {
+        "passed": 2,
+        "total": 2
+      }
+    },
+    "cases": [
+      {
+        "id": "exact-0",
+        "group": "exact",
+        "query": "preference.language.reply",
+        "expected": [
+          "preference.language.reply"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "preference.language.reply"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 35.254540998721495,
+        "response_bytes": 2533
+      },
+      {
+        "id": "natural-0",
+        "group": "natural",
+        "query": "中文 简洁 回答",
+        "expected": [
+          "preference.language.reply"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "preference.language.reply"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 34.12583301542327,
+        "response_bytes": 2533
+      },
+      {
+        "id": "exact-1",
+        "group": "exact",
+        "query": "preference.editor.theme",
+        "expected": [
+          "preference.editor.theme"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "preference.editor.theme"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 33.53808299289085,
+        "response_bytes": 2545
+      },
+      {
+        "id": "natural-1",
+        "group": "natural",
+        "query": "editor theme cobalt",
+        "expected": [
+          "preference.editor.theme"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "preference.editor.theme"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.31179199065082,
+        "response_bytes": 2546
+      },
+      {
+        "id": "exact-2",
+        "group": "exact",
+        "query": "workflow.quota.recovery",
+        "expected": [
+          "workflow.quota.recovery"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.quota.recovery"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 34.00604100897908,
+        "response_bytes": 2556
+      },
+      {
+        "id": "natural-2",
+        "group": "natural",
+        "query": "429 限额 恢复 断点",
+        "expected": [
+          "workflow.quota.recovery"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.quota.recovery"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 34.76766697713174,
+        "response_bytes": 2556
+      },
+      {
+        "id": "exact-3",
+        "group": "exact",
+        "query": "workflow.git.authorization",
+        "expected": [
+          "workflow.git.authorization"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.git.authorization"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 33.64137499011122,
+        "response_bytes": 2557
+      },
+      {
+        "id": "natural-3",
+        "group": "natural",
+        "query": "git push 用户授权",
+        "expected": [
+          "workflow.git.authorization"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.git.authorization"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.29899998405017,
+        "response_bytes": 2557
+      },
+      {
+        "id": "exact-4",
+        "group": "exact",
+        "query": "workflow.tests.evidence",
+        "expected": [
+          "workflow.tests.evidence"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.tests.evidence"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 31.225999991875142,
+        "response_bytes": 2555
+      },
+      {
+        "id": "natural-4",
+        "group": "natural",
+        "query": "修复完成 测试 证据",
+        "expected": [
+          "workflow.tests.evidence"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.tests.evidence"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.81754199997522,
+        "response_bytes": 2556
+      },
+      {
+        "id": "exact-5",
+        "group": "exact",
+        "query": "workflow.dependencies.lockfile",
+        "expected": [
+          "workflow.dependencies.lockfile"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.dependencies.lockfile"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 30.781000008573756,
+        "response_bytes": 2566
+      },
+      {
+        "id": "natural-5",
+        "group": "natural",
+        "query": "npm ci committed lockfile",
+        "expected": [
+          "workflow.dependencies.lockfile"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.dependencies.lockfile"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.82208301243372,
+        "response_bytes": 2567
+      },
+      {
+        "id": "exact-6",
+        "group": "exact",
+        "query": "service.mysql.port",
+        "expected": [
+          "service.mysql.port"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "service.mysql.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.632249989546835,
+        "response_bytes": 2521
+      },
+      {
+        "id": "natural-6",
+        "group": "natural",
+        "query": "MySQL port",
+        "expected": [
+          "service.mysql.port"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "service.mysql.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 30.394499975955114,
+        "response_bytes": 2522
+      },
+      {
+        "id": "exact-7",
+        "group": "exact",
+        "query": "service.redis.expiry",
+        "expected": [
+          "service.redis.expiry"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "service.redis.expiry"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.513084006495774,
+        "response_bytes": 2537
+      },
+      {
+        "id": "natural-7",
+        "group": "natural",
+        "query": "Redis session cache expires",
+        "expected": [
+          "service.redis.expiry"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "service.redis.expiry"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.549124996876344,
+        "response_bytes": 2540
+      },
+      {
+        "id": "exact-8",
+        "group": "exact",
+        "query": "workflow.windows.cleanup",
+        "expected": [
+          "workflow.windows.cleanup"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.windows.cleanup"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.13174999109469,
+        "response_bytes": 2574
+      },
+      {
+        "id": "natural-8",
+        "group": "natural",
+        "query": "本任务 窗口 清理",
+        "expected": [
+          "workflow.windows.cleanup"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.windows.cleanup"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.15104099945165,
+        "response_bytes": 2574
+      },
+      {
+        "id": "exact-9",
+        "group": "exact",
+        "query": "workflow.secrets.storage",
+        "expected": [
+          "workflow.secrets.storage"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.secrets.storage"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 30.834375007543713,
+        "response_bytes": 2550
+      },
+      {
+        "id": "natural-9",
+        "group": "natural",
+        "query": "API keys passwords shared memory",
+        "expected": [
+          "workflow.secrets.storage"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.secrets.storage"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 33.15766601008363,
+        "response_bytes": 2551
+      },
+      {
+        "id": "exact-10",
+        "group": "exact",
+        "query": "workflow.release.rollback",
+        "expected": [
+          "workflow.release.rollback"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.release.rollback"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 31.521333003183827,
+        "response_bytes": 2568
+      },
+      {
+        "id": "natural-10",
+        "group": "natural",
+        "query": "release rollback artifact",
+        "expected": [
+          "workflow.release.rollback"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.release.rollback"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.226665993221104,
+        "response_bytes": 2566
+      },
+      {
+        "id": "exact-11",
+        "group": "exact",
+        "query": "workflow.approval.exact",
+        "expected": [
+          "workflow.approval.exact"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.approval.exact"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 42.4067499989178,
+        "response_bytes": 2571
+      },
+      {
+        "id": "natural-11",
+        "group": "natural",
+        "query": "Active memory Owner confirmation",
+        "expected": [
+          "workflow.approval.exact"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "workflow.approval.exact"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 40.06204102188349,
+        "response_bytes": 2573
+      },
+      {
+        "id": "exact-12",
+        "group": "exact",
+        "query": "atlas.preference.modules",
+        "expected": [
+          "atlas.preference.modules"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "atlas.preference.modules"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 67.96954202582128,
+        "response_bytes": 2790
+      },
+      {
+        "id": "natural-12",
+        "group": "natural",
+        "query": "atlas compact modules interfaces",
+        "expected": [
+          "atlas.preference.modules"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "atlas.preference.modules"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 65.63341701985337,
+        "response_bytes": 2791
+      },
+      {
+        "id": "exact-13",
+        "group": "exact",
+        "query": "atlas.database.port",
+        "expected": [
+          "atlas.database.port"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "atlas.database.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 61.990041023818776,
+        "response_bytes": 2753
+      },
+      {
+        "id": "natural-13",
+        "group": "natural",
+        "query": "atlas PostgreSQL port",
+        "expected": [
+          "atlas.database.port"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "atlas.database.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 60.00433297595009,
+        "response_bytes": 2754
+      },
+      {
+        "id": "exact-14",
+        "group": "exact",
+        "query": "borealis.database.port",
+        "expected": [
+          "borealis.database.port"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "borealis.database.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 56.714832986472175,
+        "response_bytes": 2765
+      },
+      {
+        "id": "natural-14",
+        "group": "natural",
+        "query": "borealis PostgreSQL port",
+        "expected": [
+          "borealis.database.port"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "borealis.database.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 57.101207989035174,
+        "response_bytes": 2766
+      },
+      {
+        "id": "exact-15",
+        "group": "exact",
+        "query": "borealis.release.region",
+        "expected": [
+          "borealis.release.region"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "borealis.release.region"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 53.48662499454804,
+        "response_bytes": 2772
+      },
+      {
+        "id": "natural-15",
+        "group": "natural",
+        "query": "borealis deploy eu-west",
+        "expected": [
+          "borealis.release.region"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "borealis.release.region"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 52.32095799874514,
+        "response_bytes": 2772
+      },
+      {
+        "id": "paraphrase-0",
+        "group": "paraphrase",
+        "query": "Which colour should my coding application use?",
+        "expected": [
+          "preference.editor.theme"
+        ],
+        "cwd": "outside",
+        "keys": [],
+        "passed": false,
+        "forbidden_hits": [],
+        "elapsed_ms": 34.5785419922322,
+        "response_bytes": 812
+      },
+      {
+        "id": "paraphrase-1",
+        "group": "paraphrase",
+        "query": "请求被限流以后怎样接着干？",
+        "expected": [
+          "workflow.quota.recovery"
+        ],
+        "cwd": "outside",
+        "keys": [],
+        "passed": false,
+        "forbidden_hits": [],
+        "elapsed_ms": 31.974666024325415,
+        "response_bytes": 812
+      },
+      {
+        "id": "crosslingual-0",
+        "group": "crosslingual",
+        "query": "缓存中的登录会话能保留多久？",
+        "expected": [
+          "service.redis.expiry"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "atlas.preference.modules"
+        ],
+        "passed": false,
+        "forbidden_hits": [],
+        "elapsed_ms": 53.19745797896758,
+        "response_bytes": 2782
+      },
+      {
+        "id": "crosslingual-1",
+        "group": "crosslingual",
+        "query": "What must happen before declaring a bug fixed?",
+        "expected": [
+          "workflow.tests.evidence"
+        ],
+        "cwd": "outside",
+        "keys": [
+          "service.mysql.port",
+          "preference.editor.theme",
+          "workflow.windows.cleanup"
+        ],
+        "passed": false,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.367957988753915,
+        "response_bytes": 5997
+      },
+      {
+        "id": "no-answer-0",
+        "group": "abstention",
+        "query": "古埃及金字塔建造年代是多少？",
+        "expected": [],
+        "cwd": "outside",
+        "keys": [],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.1375839994289,
+        "response_bytes": 812
+      },
+      {
+        "id": "no-answer-1",
+        "group": "abstention",
+        "query": "What is the circumference of Neptune?",
+        "expected": [],
+        "cwd": "outside",
+        "keys": [],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 31.02995900553651,
+        "response_bytes": 812
+      },
+      {
+        "id": "no-answer-2",
+        "group": "abstention",
+        "query": "Who owns the invoice processing service?",
+        "expected": [],
+        "cwd": "outside",
+        "keys": [
+          "service.redis.expiry"
+        ],
+        "passed": false,
+        "forbidden_hits": [],
+        "elapsed_ms": 31.263917015166953,
+        "response_bytes": 2539
+      },
+      {
+        "id": "no-answer-3",
+        "group": "abstention",
+        "query": "How much does the editor subscription cost?",
+        "expected": [],
+        "cwd": "outside",
+        "keys": [
+          "preference.editor.theme"
+        ],
+        "passed": false,
+        "forbidden_hits": [],
+        "elapsed_ms": 32.96462501748465,
+        "response_bytes": 2545
+      },
+      {
+        "id": "scope-atlas",
+        "group": "scope",
+        "query": "PostgreSQL port",
+        "expected": [
+          "atlas.database.port"
+        ],
+        "forbidden": [
+          "borealis.database.port"
+        ],
+        "cwd": "atlas",
+        "keys": [
+          "atlas.database.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 51.96141600026749,
+        "response_bytes": 2761
+      },
+      {
+        "id": "scope-borealis",
+        "group": "scope",
+        "query": "PostgreSQL port",
+        "expected": [
+          "borealis.database.port"
+        ],
+        "forbidden": [
+          "atlas.database.port"
+        ],
+        "cwd": "borealis",
+        "keys": [
+          "borealis.database.port"
+        ],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 58.29250000533648,
+        "response_bytes": 2779
+      },
+      {
+        "id": "pending",
+        "group": "pending",
+        "query": "pending.canary.forbidden",
+        "expected": [],
+        "forbidden": [
+          "pending.canary.forbidden"
+        ],
+        "cwd": "outside",
+        "keys": [],
+        "passed": true,
+        "forbidden_hits": [],
+        "elapsed_ms": 41.611499997088686,
+        "response_bytes": 812
+      }
+    ],
+    "association_keys": [
+      "workflow.approval.exact"
+    ],
+    "stale_probe": {
+      "entries": [],
+      "needs_review": [
+        "atlas.database.port"
+      ]
+    },
+    "schema_probes": {
+      "abstention": "recall evaluation case none needs expected_keys",
+      "top_k_64": "LIMIT_INVALID"
+    }
+  },
+  "scale": [
+    {
+      "records": 16,
+      "fixture_pipeline_seconds": 0.774988166987896,
+      "rebuild_seconds": 0.44268779101548716,
+      "index_bytes": 120700,
+      "warm": {
+        "samples": 20,
+        "p50_ms": 32.27499949571211,
+        "p95_ms": 34.48204099549912
+      },
+      "git_processes": 4,
+      "returned": [
+        "preference.topic000.colour"
+      ]
+    },
+    {
+      "records": 64,
+      "fixture_pipeline_seconds": 2.4088988750008866,
+      "rebuild_seconds": 1.6637660420092288,
+      "index_bytes": 458586,
+      "warm": {
+        "samples": 20,
+        "p50_ms": 36.15314600756392,
+        "p95_ms": 38.64300000714138
+      },
+      "git_processes": 4,
+      "returned": [
+        "preference.topic000.colour"
+      ]
+    },
+    {
+      "records": 256,
+      "fixture_pipeline_seconds": 11.672853458003374,
+      "rebuild_seconds": 8.91257816698635,
+      "index_bytes": 1791315,
+      "warm": {
+        "samples": 20,
+        "p50_ms": 52.727978996699676,
+        "p95_ms": 59.16941599571146
+      },
+      "git_processes": 4,
+      "returned": [
+        "preference.topic000.colour"
+      ]
+    }
+  ],
+  "collision_probes": [
+    {
+      "query": "缓存中的登录会话能保留多久？",
+      "record": "atlas.preference.modules",
+      "identical_tokens": [],
+      "bucket_collisions": [
+        {
+          "bucket": 37,
+          "query_token": "会话",
+          "record_token": "atlas"
+        },
+        {
+          "bucket": 1193,
+          "query_token": "缓存",
+          "record_token": "compact::modules"
+        }
+      ]
+    },
+    {
+      "query": "Who owns the invoice processing service?",
+      "record": "service.redis.expiry",
+      "identical_tokens": [],
+      "bucket_collisions": [
+        {
+          "bucket": 1736,
+          "query_token": "processing::service?",
+          "record_token": "redis"
+        }
+      ]
+    }
+  ],
+  "profiling_ablation": {
+    "scope": "profiling-only exact query on 256 synthetic records; not production implementation or broad safety proof",
+    "unchanged": "record ids, full bodies, vector_pointer on every call; v3 pre/post verification not patched",
+    "normal": {
+      "samples": 30,
+      "p50_ms": 50.668103503994644,
+      "p95_ms": 52.371708006830886
+    },
+    "skip_redundant_legacy_HEAD_check": {
+      "samples": 30,
+      "p50_ms": 43.26654200849589,
+      "p95_ms": 45.58299999916926
+    },
+    "ablated_git_processes": 3
+  },
+  "source_files_preserved": 113,
+  "source_manifest_and_read_coverage": [
+    {
+      "path": ".github/workflows/test.yml",
+      "sha256": "4c5ed06a239d11496b882efe716aa1441ce9eed028747baa6899a14db46f118b",
+      "bytes": 917,
+      "read_coverage": "full"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "06eb34cb45df96ee77f14063005337936ba6fed6531d7208c372351f724cfd97",
+      "bytes": 216,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "BACKLOG.md",
+      "sha256": "11a7cb5ec4fa0a3fa156b4d0d5da33184ab32f36428836996642271ded3c38b1",
+      "bytes": 4777,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "ae2329d8792d9838913e4d416969f2c84e7ca43f30bb282c3ea5ac94bba11265",
+      "bytes": 4651,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "2d9330045407fdab9ae0b2f9caa322af20ff2ac868ebac46f456ecec88e8f928",
+      "bytes": 500,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "CONTRIBUTING.zh-CN.md",
+      "sha256": "2fe1f3dbbd856ee4725b94f98baee5c702f9812e0f1c0efd8f0408001fa502b4",
+      "bytes": 555,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "3ec67d5ed56abfd3d0cf4620b19475c17243aff48ba9562d09d677a6905130b3",
+      "bytes": 1095,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "README.md",
+      "sha256": "3d14a6ed86e9b6a745e44279941ffafed716b368784152fe12410aa22eea2894",
+      "bytes": 11530,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "sha256": "58fd82a2f444a164a493ba34c8f2daea30ddbe983ab99aa36f20f1a67a1ccf21",
+      "bytes": 10602,
+      "read_coverage": "full"
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "eca896842c70f00637bfbe981e22e1067a51354c3f4128a3a175a990984c9b05",
+      "bytes": 727,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "SECURITY.zh-CN.md",
+      "sha256": "de228e32fecd7440d7b3bc688db4cbf2d0028f27e5b078935507b12cf478738a",
+      "bytes": 659,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/architecture.architecture.json",
+      "sha256": "a37403f63d481da6181b3e96a470fa1e221ea21b6b30713888f485aa03527435",
+      "bytes": 5482,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/architecture.html",
+      "sha256": "35fb5f7a3594578cf789f0168f80b34fd776b6a7c37c60d4ae7b7e15ce3b2ce6",
+      "bytes": 678608,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/architecture.md",
+      "sha256": "e9c6d01e42fb5f70675d8dc1d228d4bbbf5caba0c08b2fdcac81b5a37a2b4c06",
+      "bytes": 1650,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/assets/architecture-en.png",
+      "sha256": "667969f1ef299cdeaa5237a85a02ace693bc95c1260af4dfd4f994cab84bb675",
+      "bytes": 119062,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/assets/architecture-zh-CN.png",
+      "sha256": "59245544f07954ca7d30410497cba4f2b72e0feaa83b8bff1ab5660a65daf049",
+      "bytes": 119509,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/assets/v03-en.png",
+      "sha256": "d174d4cf2c0aac647bb83e4951b16a1aff61e23e17e444913f39f5c265354850",
+      "bytes": 100911,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/assets/v03-zh-CN.png",
+      "sha256": "12ae6c173af3b0f59ac993a50ac73c07805061c756bf402d1cb92b3c168c046f",
+      "bytes": 112448,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/context-budget.md",
+      "sha256": "c3b761ce5db1e98f730274effb2ab74eca6a2b60ce36c35473678c391ba57769",
+      "bytes": 4303,
+      "read_coverage": "full"
+    },
+    {
+      "path": "docs/curation.md",
+      "sha256": "d38b205b4acf3bd755333877f913d9b201d20c02603ffb4129f25e734a5bd438",
+      "bytes": 1198,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/experimental-knowledge-graph.md",
+      "sha256": "40a082b35bfe134c06654926cddad98790d888aba65204750dab64bc423cb678",
+      "bytes": 4996,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/maintenance.md",
+      "sha256": "a6bcb507454970aed1aee892cf9b7529c1fbc0268639ab890f4922ea1b36094c",
+      "bytes": 7053,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/mcp.md",
+      "sha256": "8ccc777c7a228bdcb5a0d45affb5dc1720ced741400f65d5c968489716c31613",
+      "bytes": 7374,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/quickstart.md",
+      "sha256": "79ff4a4f2dda1756edea53be6e67c911fd19ff15dee13704a41eb9dbd9f64a71",
+      "bytes": 2118,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/security.md",
+      "sha256": "7fe979d8c85010a0304b61e1958cad8faa85ae88f0b5fed25d717ae995637b4a",
+      "bytes": 1296,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/semantic.md",
+      "sha256": "d736710f086a26960982093ec326e4102025bc8d72dc343e84e967144b3a71af",
+      "bytes": 7640,
+      "read_coverage": "full"
+    },
+    {
+      "path": "docs/skill-retrieval.md",
+      "sha256": "322844b1e358b79a96cab786bbc780f4f7013f13d3b552e2300f324e0b3e13f3",
+      "bytes": 4991,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/tool-adapters.md",
+      "sha256": "3216e383e48797307d24946c21642b5afbe87b40fda30435c6a3aa3f6f19463e",
+      "bytes": 790,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v0.3.md",
+      "sha256": "3de582ba61ee540b987106406b75d40f492bfa5ff85310457a8ed0dfdf38d3f4",
+      "bytes": 5989,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v0.4.md",
+      "sha256": "c721b6fd88dec119d942f36afc8b99bb1bf2cd3f54d9850caba383f9a1f2f0be",
+      "bytes": 945,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v0.5.1.md",
+      "sha256": "80aa254052a2aac08362c7e795c887e41baa1383880cc07a3e6acebff40f554e",
+      "bytes": 3419,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v0.5.2.md",
+      "sha256": "afc4dadeda30ee9afa4e7e1f79879cc30c073da6dbf92306e539c2e605366772",
+      "bytes": 3142,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v0.5.3.md",
+      "sha256": "765a618a48d68fb98ea74e2b7d742b05914b672ae1eab970aa33c1a431069e0c",
+      "bytes": 2261,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v0.5.md",
+      "sha256": "32f1e80af5092ee124871c818d3f40e46f868517bdce37ac2a9326b25a315d3c",
+      "bytes": 4207,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v03-en.architecture.json",
+      "sha256": "f19f6b7e24cad22c750da93cd5a25c8d2ce5d3129f2602588aa921a4b2956190",
+      "bytes": 4068,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v03-en.html",
+      "sha256": "73534eee438caf44cd6f27a90eeedb70bc4c6f2099139f3c80e0e319105646cb",
+      "bytes": 667249,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/v03.architecture.json",
+      "sha256": "8c6001b17db4df0d5748b8a828bcb24341b13a52594b3ab3d399ee518dfb321d",
+      "bytes": 4397,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/v03.html",
+      "sha256": "3624c28b6eb608d19800e47ea8e4023b15719842ce6c39af89113ab6c9e02a0d",
+      "bytes": 667289,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/zh-CN/README.md",
+      "sha256": "805ff063d0fd72a7ba8270e060a4e77ccfbb63933475004d57d7cc1ed92fa56b",
+      "bytes": 1099,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/architecture.architecture.json",
+      "sha256": "82a929598750baba36fd3ebad1900964bfb78142e7d7a792a8029004eeed97cb",
+      "bytes": 5805,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/architecture.html",
+      "sha256": "5de3e058ba76179c0c14c7a66ca0faa390aaff320315f040f063e1fa1c9c59a8",
+      "bytes": 678880,
+      "read_coverage": "generated/image artifact; inventory only"
+    },
+    {
+      "path": "docs/zh-CN/architecture.md",
+      "sha256": "6d67ccda478e82f61e4fea14cf9baddac5c3f7b62f7f3f5ef950a88301507b5d",
+      "bytes": 4089,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/backlog.md",
+      "sha256": "94c44f236b1f9d833807e9fbf44074cddecb31d8a515d797a0f3bdee2697e758",
+      "bytes": 3934,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/command-reference.md",
+      "sha256": "abd8855373284e514efec31ab8ac748ad2b1b76735d77db8801bcfcfb662dc38",
+      "bytes": 5824,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/context-budget.md",
+      "sha256": "daf9344c7c8e6ebf93187042e4997e8382c8ccea307c5246a559c3d91529727d",
+      "bytes": 3058,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/curation.md",
+      "sha256": "7641eb22b40d28c54bcc8eec7e582108849a341750760eb5e786f672f2f0b427",
+      "bytes": 3134,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/maintenance.md",
+      "sha256": "49274c5806b10fa0ca5fb21c2ce23c97b5ff9730b886bf98746228b70a108a55",
+      "bytes": 6153,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/mcp.md",
+      "sha256": "bdad78aadbca683bf0137db6c10b79192a7307716e22b765d24bbbfa885c2b3e",
+      "bytes": 5416,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/quickstart.md",
+      "sha256": "8efff033ae2afe5171fc0b19dfc3a9e3fc0c3c4c8832568f8e1132cc84eca9bd",
+      "bytes": 4702,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/security.md",
+      "sha256": "5bde4c22263a7a63863d68a9974af5e73f22693c47d7809320b47ff983fca5a8",
+      "bytes": 1974,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/skill-retrieval.md",
+      "sha256": "b4fb16b547db92ece62895a6ac8fbedb0afab02fa772ed46f1564b23b098ddb4",
+      "bytes": 3847,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/storage-and-backup.md",
+      "sha256": "b913a71f32ae9f43544e742f837ed3689dcb847ff85ade9441a691c1b5a9afa9",
+      "bytes": 2689,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/tool-adapters.md",
+      "sha256": "12c59ed8529e1cfab5c16bd827df673c5556e53c0f36c9322a22f28b24d32731",
+      "bytes": 2120,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/v0.3.md",
+      "sha256": "127c133f9a9fa2ed612bff9fb09aa6b3f7cfae4b6e00ab22d8df4bf1098c2a27",
+      "bytes": 4765,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/v0.4.md",
+      "sha256": "c737a0bdf9df42ad95efc4d34462faea093695e4101f3df4b20179edebeb72c3",
+      "bytes": 810,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/v0.5.1.md",
+      "sha256": "7fb8ee898c8e6f64f132d21d0802f213228285684259b81d69b347fa1252792a",
+      "bytes": 2838,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/v0.5.2.md",
+      "sha256": "15a69fc3e11f17fc731551fd9d76d633b2785e0c7e1ab9e73bd65ed0c9f2744b",
+      "bytes": 2724,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/v0.5.3.md",
+      "sha256": "b063094242ae3ac19bafac60d8caf3994e9b3962f6db5230073e41978383f7cc",
+      "bytes": 1820,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "docs/zh-CN/v0.5.md",
+      "sha256": "b6338310e11a40a38f0348f1e5bb552563524efb4ed477a568e48800164f9ddb",
+      "bytes": 3260,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "examples/content-directory.example.json",
+      "sha256": "1d112aef05f68e5bcbe36e967f59e1a19955755cace77ea2b6a4333dd57b8144",
+      "bytes": 1878,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "examples/global-preferences.export.json",
+      "sha256": "27061600f994390dd10b56f630174cff325641ab29efedc94a65a41c9393765a",
+      "bytes": 1199,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "examples/model-lock.minilm.json",
+      "sha256": "ce5b84793cba75e56adfadd50722ef2cde0ec5d934a471d7cf8195132485e9c9",
+      "bytes": 435,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "examples/recall-evaluation.example.json",
+      "sha256": "ae65100de14ae13a58de08566499093f0bbf51f83c8217e1fe8da0a9c611c9ec",
+      "bytes": 1076,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "examples/skill-catalog.json",
+      "sha256": "b1da135b6a13b9a5cde51d3473774a6c9c15bd5d721caba1bb3a98229389d2b7",
+      "bytes": 646,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "examples/skill-intent.json",
+      "sha256": "c36b6c7d0591991a3c180e2aa6d6b23b3f010b0bc8e3bd410d4b511e900fa87a",
+      "bytes": 257,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "db84aa9d01e0abfae18c48170a1c446633cc07f43218bbb2378a2846280e1be9",
+      "bytes": 828,
+      "read_coverage": "full"
+    },
+    {
+      "path": "runtime/__init__.py",
+      "sha256": "9dfae75a643bee970d25ff9bc1ddabf67848ea566aeccecae470136e298f65c5",
+      "bytes": 43,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "runtime/queue_archive.py",
+      "sha256": "e2c48629bdbccc46721a0ef81b45116fa9394c3b95a3576bc134cc1858084b89",
+      "bytes": 1948,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "runtime/simple_memory.py",
+      "sha256": "b123079da17b6193d20ac2125dd1cdec353235805c5e26107e282a347a67ebd9",
+      "bytes": 85327,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "runtime/write_policy.py",
+      "sha256": "7b6f50a1641380d1f3415fb322e361fbb32200eec87df1d7587001952ef72eb8",
+      "bytes": 2802,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "schemas/agent-export-v1.schema.json",
+      "sha256": "fe8496e1e7afaebc3db4d8a5d17633cd6df32b618200c628a3816379dc07608b",
+      "bytes": 4607,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "schemas/knowledge-graph-candidate-v1.schema.json",
+      "sha256": "b33e65ea48b08cd9845bb15475d160b2b3b63eb779a1ed8415616ddc3b0b75c6",
+      "bytes": 2286,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "schemas/recall-evaluation-v1.schema.json",
+      "sha256": "ff2629e3f164721ba6753eb7e51b111689d5d6abdcafdbdd01b40fac73ea8503",
+      "bytes": 2926,
+      "read_coverage": "full"
+    },
+    {
+      "path": "scripts/__init__.py",
+      "sha256": "2389567e6673212388584f5fc1529ee4b5334a1e117a71efc8ec8294cec7f518",
+      "bytes": 48,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "scripts/assemble_inventory.py",
+      "sha256": "0c1c508d548cd4aa5492aa9e009492eaf823afe13d00b994ae55c4e04de8d3bf",
+      "bytes": 14418,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "scripts/benchmark.py",
+      "sha256": "b5c95c9f5ac24fd8360c45e52775cad3b89aabc4dce8fc6d56719196142c6e30",
+      "bytes": 2830,
+      "read_coverage": "full"
+    },
+    {
+      "path": "scripts/curate_uploads.py",
+      "sha256": "c850770170142cfd875f6f62a78ee4bb25709514ee8c0c6220c1b2f7410e8eb0",
+      "bytes": 19930,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "scripts/evaluate_retrieval.py",
+      "sha256": "f7128e5727202ef1aa5a6073232d4272109d729908b7af8bacb4e11b4a6d9b4c",
+      "bytes": 2259,
+      "read_coverage": "full"
+    },
+    {
+      "path": "scripts/retrieval_v3.py",
+      "sha256": "4390222eae7022493f9edc676e2ca7a1447ee8e2bca3c2e964446997ae56e112",
+      "bytes": 27825,
+      "read_coverage": "full"
+    },
+    {
+      "path": "scripts/source_freshness.py",
+      "sha256": "3539479df3ad39e1fd1f25c8f5cb0febdc384811743d6aec4aef2754aaacd1b8",
+      "bytes": 6415,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "scripts/vector_memory.py",
+      "sha256": "1ceffa65dbf95c91bfb68ce105345cd4da80537246700c86661bb8b90deee8d9",
+      "bytes": 52781,
+      "read_coverage": "full"
+    },
+    {
+      "path": "skills/memory-graph/SKILL.md",
+      "sha256": "89aa96c85b9e135259ab43c7fee48a442f756cae76fc13718a766502968227a6",
+      "bytes": 3330,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/__init__.py",
+      "sha256": "7132606a82278b16024474e4f38c7024a70f7e086af79417786afb3c6b48f817",
+      "bytes": 60,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/__main__.py",
+      "sha256": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+      "bytes": 48,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/cli.py",
+      "sha256": "ec3c0f4a4509cd0e3496db3e06544f0fc9d38c1d77e6083ffbd5ed765908f9a9",
+      "bytes": 7159,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/errors.py",
+      "sha256": "d25d49919121630aa520e978a5f2c8414d9ad4e609ddb707b74eeddedd1bab66",
+      "bytes": 614,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/fact_keys.py",
+      "sha256": "2540c810b9f8384a85eab9d757a849dcbb602a4c445a1858a116481b84726160",
+      "bytes": 4741,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/knowledge_graph.py",
+      "sha256": "41c2fee2734357e06f7ff53f3b51b956584ccc3ff52df3f430c5b6ffd54cf0cd",
+      "bytes": 15445,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/maintenance.py",
+      "sha256": "18807502a896b780a74e421e5db42a244b4c8157a233166b83c21df8f6a74acc",
+      "bytes": 49746,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/mcp_server.py",
+      "sha256": "d5010b965b3c9cbaaf906f122cf92334d62d309951dcb6abe36edfc840793acf",
+      "bytes": 8123,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/queue_state.py",
+      "sha256": "0a33a6c30b6580e9099dd0e6b7938e07917ebf1027b00141efa71bd45e6f2b30",
+      "bytes": 16635,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "src/chmemx/service.py",
+      "sha256": "1f2f166b50d772bb8baf0e03d7ba7d4950037d1a929d85d6b554d8a0e2e7707f",
+      "bytes": 43242,
+      "read_coverage": "lines 1-400 only"
+    },
+    {
+      "path": "src/chmemx/skill_retrieval.py",
+      "sha256": "8f0ac7294baf00be97e849aaaecadaae09ce903f80baccbee1600142d3ac4a21",
+      "bytes": 10333,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/installed_package_smoke.py",
+      "sha256": "1c8a2444e0625c9da97a5b7b996415f067689c95a64e194d4d2ce10b5dd6ede1",
+      "bytes": 6287,
+      "read_coverage": "full"
+    },
+    {
+      "path": "tests/simple_memory_test.py",
+      "sha256": "57c858e8ed3660f9042bc027f2ebfc273bfe7f5a930d9d911357ca102ccefba4",
+      "bytes": 25307,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_assemble_inventory.py",
+      "sha256": "9f893bc1bb071d627dcc23be513d5b17d531009e5f3e2c3c68c71ec5e292919c",
+      "bytes": 5192,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_commit_proof.py",
+      "sha256": "bf923a3b7a725a68ba4030bc0ab5356d20e00459fb61dc7be1c122a73f56be78",
+      "bytes": 13043,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_curate_uploads.py",
+      "sha256": "21f9e2d083ce03e251d8338f79cc89c5c19fb4d03ab467001b6def236f72ca33",
+      "bytes": 7500,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_docs.py",
+      "sha256": "e7ff4d985e163314621bcbc23b2d69bd3adbcc19f0c7de2fc6dcdeb1fa575ad8",
+      "bytes": 2655,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_identity_boundaries.py",
+      "sha256": "fb9dcffc51bbc006943a229a0312a47295367037623d3afacf73b6c06ab1c026",
+      "bytes": 10013,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_knowledge_graph.py",
+      "sha256": "15e8211b40eca47c889e4d553aa20200e47d2e58a9af5af1a10158d111afeaaa",
+      "bytes": 20747,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_lifecycle.py",
+      "sha256": "177f09d5f18cbce3cc7736b7b1c1a08703ba76f0924d9f3ea48ff87dbb389989",
+      "bytes": 13487,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_maintenance.py",
+      "sha256": "2d54d0e92d85478116de796931fa1ba804c19537826d6673022a2ffd371a2ad1",
+      "bytes": 21580,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_recall_scope.py",
+      "sha256": "0383fa4388c833a551063aa992d26b55749d5e8f9a9a24bcbf4afb6bd36ea692",
+      "bytes": 8337,
+      "read_coverage": "full"
+    },
+    {
+      "path": "tests/test_registration.py",
+      "sha256": "014f4f85f5b18a881de7cc055e00303b5e8dd034d5c0e17cf05cfcee09438b76",
+      "bytes": 4861,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_release_acceptance.py",
+      "sha256": "0fa6c64c7b229e172c58748b382075f8e497397af75934671572774d3555e5d3",
+      "bytes": 6183,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_retrieval_efficiency.py",
+      "sha256": "8195cf59acdf01b18f7b95de6482002e9774938c46dd4dc318a494d37e0c14e6",
+      "bytes": 11866,
+      "read_coverage": "full"
+    },
+    {
+      "path": "tests/test_review_context.py",
+      "sha256": "cd1dc7521c5ff516130bb5afd4ab97cfcf38d05ae70a3656668dd09f91ca28b4",
+      "bytes": 3235,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_service.py",
+      "sha256": "20f10f45a4f3633c82950e5c7b3213c2fae83b76664eaf98603f34c3eaeb92b5",
+      "bytes": 37729,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_skill_retrieval.py",
+      "sha256": "420e5623d080733c579c0a7ab97aabea382512f806a4c2d3e953ff82c319b18f",
+      "bytes": 12787,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_source_freshness.py",
+      "sha256": "1f9abc48ce2a75fdda976beb8033ffeb8f4196b5c605ae654a525901e32e1b8c",
+      "bytes": 6729,
+      "read_coverage": "inventory only; audit pending"
+    },
+    {
+      "path": "tests/test_store_snapshot.py",
+      "sha256": "f4846cd0657d1a82b20a514a24337f31b758e7dafc34a908da8f7b5986bdf95a",
+      "bytes": 2614,
+      "read_coverage": "full"
+    },
+    {
+      "path": "tests/test_vector_memory.py",
+      "sha256": "ca127ce49e25f404bead34cfc227990ac821bfca0250749eff0b64299d14ab1e",
+      "bytes": 23582,
+      "read_coverage": "full"
+    }
+  ],
+  "local_experiment_root": "/tmp/chmemx-audit-20261117-iOO3MD",
+  "diagnostic_driver_sha256": {
+    "probe.py": "c8afa29b4de9c4a3cc4f534c09dbaac48eb3e5604c027d92dee50f224fbd1b1b",
+    "ablation.py": "db144a258f886509c571099d30b10e3d2d0116b9c363cbc0626b90e89d255ac5"
+  }
+}

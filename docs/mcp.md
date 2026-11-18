@@ -38,10 +38,15 @@ The server supports tools, initialization and ping, not resources, prompts, HTTP
 
 ## Three daily tools
 
+**Unreleased working-tree change:** natural-language recall requires a caller-understood
+`query_plan`. Missing plans return `NEEDS_UNDERSTANDING` without searching. This also applies
+to `start(query=...)`. See [understanding-first contract and client migration](understanding-first.md).
+The released package and existing client wrappers are not upgraded by these source changes.
+
 | Tool | Input | Result |
 |---|---|---|
-| `start` | optional `query`, `upload_id`, `key_query` | Project context, policy, source statistics, job status, fact-key directory |
-| `recall` | `query`, optional `limit` 1–20 | Accepted records, source freshness, associations; stale facts separated into `needs_review` |
+| `start` | optional `query` + `query_plan`, `upload_id`, `key_query` | Project context, policy, source statistics, job status, fact-key directory |
+| `recall` | `query`, `query_plan`, optional `limit` 1–20 | Accepted records, source freshness, associations; stale facts separated into `needs_review` |
 | `upload` | `key`, string `value`, `source`; optional `scope`, `memory_class`, `signature`, `request_id` | Duplicate, Pending, conflict, quarantine, or policy-authorized commit |
 
 Example global preference:

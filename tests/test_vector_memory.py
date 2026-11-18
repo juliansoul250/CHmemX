@@ -16,6 +16,7 @@ from vector_memory import (  # noqa: E402
     LEGACY_INDEX_TYPE,
     VectorError,
     build_index,
+    cell_matches_record,
     corpus_feature_weights,
     evaluate_index,
     load_evaluation_suite,
@@ -27,6 +28,105 @@ from vector_memory import (  # noqa: E402
 
 
 class VectorMemoryAcceptance(unittest.TestCase):
+    def test_untested_graph_cannot_satisfy_graph_threshold(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE, "suite_id": "graph-absent",
+                 "thresholds": {"min_association_hit_rate": 1},
+                 "cases": [{"id": "only-primary", "query": "quota", "expected_keys": ["safe"]}]}
+        result = evaluate_index(self.index, suite,
+                                ranker=lambda *args: {"entries": [{"key": "safe"}]})
+        self.assertFalse(result["passed"])
+        self.assertIsNone(result["metrics"]["association_hit_rate"])
+        self.assertEqual(result["diagnostics"]["positive_association_coverage"], "ABSENT")
+        suite["cases"][0]["expected_association_keys"] = "not-an-array"
+        path = self.root / "invalid-graph-suite.json"
+        path.write_text(json.dumps(suite))
+        with self.assertRaises(VectorError):
+            load_evaluation_suite(path)
+
+    def test_association_expectations_are_not_silently_ignored(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE, "suite_id": "graph-expected",
+                 "cases": [{"id": "edge", "query": "quota", "expected_keys": ["safe"],
+                            "expected_association_keys": ["related"]}]}
+        for present in (False, True):
+            with self.subTest(present=present):
+                def ranker(*args):
+                    return {"entries": [{"key": "safe"}],
+                            "associations": [{"key": "related"}] if present else []}
+                result = evaluate_index(self.index, suite, ranker=ranker)
+                self.assertEqual(result["passed"], present)
+                self.assertEqual(result["metrics"]["association_hit_rate"], float(present))
+                self.assertEqual(result["diagnostics"]["positive_association_case_count"], 1)
+                self.assertEqual(result["diagnostics"]["positive_association_coverage"], "PRESENT")
+
+    def test_association_leak_cannot_pass_primary_hit(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE, "suite_id": "graph-leak",
+                 "cases": [{"id": "leak", "query": "quota", "expected_keys": ["safe"],
+                            "forbidden_keys": ["private"], "forbid_cross_project": True}]}
+        def ranker(*args):
+            return {"entries": [{"key": "safe", "project_id": None}],
+                    "associations": [{"key": "private", "project_id": "other"}]}
+        result = evaluate_index(self.index, suite, ranker=ranker)
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["metrics"]["association_scope_violations"], 1)
+        self.assertEqual(result["diagnostics"]["primary_outcomes"]["within_required_rank"], 1)
+        self.assertEqual(result["diagnostics"]["failed_case_count"], 1)
+
+    def test_source_blocked_is_explained_but_not_counted_as_hit(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE, "suite_id": "source-block",
+                 "cases": [{"id": "stale", "query": "quota", "expected_keys": ["old"]}]}
+        def ranker(*args):
+            return {"entries": [], "needs_review": [{"key": "old", "body": "SECRET",
+                    "source_freshness": {"current_use_allowed": False, "status": "STALE"}}]}
+        result = evaluate_index(self.index, suite, ranker=ranker)
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["cases"][0]["source_blocked_expected_keys"], ["old"])
+        self.assertEqual(result["metrics"]["top1"], 0)
+        self.assertNotIn("SECRET", json.dumps(result))
+
+    def test_primary_outcome_diagnostics_do_not_relabel_misses_as_hits(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE, "suite_id": "outcomes",
+                 "cases": [{"id": name, "query": name, "expected_keys": ["old", "other"]}
+                           for name in ("hit", "blocked", "partial", "budget", "unknown")]}
+        blocked = {"key": "old", "source_freshness": {"current_use_allowed": False}}
+        outputs = {
+            "hit": {"entries": [{"key": "old"}], "needs_review": [blocked]},
+            "blocked": {"entries": [], "needs_review": [blocked, {
+                "key": "other", "source_freshness": {"current_use_allowed": False}}]},
+            "partial": {"entries": [], "needs_review": [blocked]},
+            "budget": {"entries": [], "needs_review": [blocked],
+                       "retrieval": {"scan_budget_exhausted": True}},
+            "unknown": {"entries": []},
+        }
+        result = evaluate_index(self.index, suite, ranker=lambda _, query, *args: outputs[query])
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["metrics"]["top1"], 0.2)
+        self.assertEqual(result["diagnostics"]["primary_outcomes"], {
+            "within_required_rank": 1,
+            "all_expectations_source_blocked": 1,
+            "partial_source_block_unresolved": 1,
+            "scan_budget_exhausted_unresolved": 1,
+            "unexplained_miss": 1,
+        })
+        self.assertEqual(result["diagnostics"]["failed_case_count"], 4)
+        self.assertEqual(result["diagnostics"]["scan_budget_exhausted_case_count"], 1)
+
+    def test_late_hit_does_not_hide_required_rank_miss(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE, "suite_id": "late-hit",
+                 "cases": [{"id": "late", "query": "quota", "expected_keys": ["old"],
+                            "required_rank": 1}]}
+        result = evaluate_index(self.index, suite, ranker=lambda *args: {
+            "entries": [{"key": "unrelated"}, {"key": "old"}]})
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["diagnostics"]["primary_outcomes"]["unexplained_miss"], 1)
+
+    def test_empty_generated_coverage_does_not_claim_graph_coverage(self):
+        suite = {"schema_version": 1, "type": EVALUATION_TYPE,
+                 "suite_id": "generated-active-coverage", "cases": []}
+        result = evaluate_index(self.index, suite)
+        self.assertTrue(result["passed"])  # Existing empty generated-coverage behavior.
+        self.assertEqual(sum(result["diagnostics"]["primary_outcomes"].values()), 0)
+        self.assertEqual(result["diagnostics"]["positive_association_coverage"], "ABSENT")
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
@@ -150,6 +250,42 @@ class VectorMemoryAcceptance(unittest.TestCase):
             "committed_by_agent": "curator-agent",
         }
         path.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
+
+    def test_unscoped_custom_cells_still_span_projects(self):
+        record = {"key": "library.tools.press", "project_id": "project-a"}
+        for fields in ({}, {"project_id": None}):
+            cell = {**fields, "member_key_prefixes": ["library.tools."]}
+            self.assertTrue(cell_matches_record(cell, record))
+            self.assertFalse(cell_matches_record({**cell, "scope": "global"}, record))
+            self.assertTrue(cell_matches_record({**cell, "scope": "global"},
+                                                {**record, "project_id": None}))
+
+    def test_cell_features_survive_reimport_with_different_record_ids(self) -> None:
+        keys = ["workflow.quota.recovery", "market.risk_gate"]
+        self.taxonomy.write_text(json.dumps({"cells": [
+            {"id": "shared", "title": "Shared", "member_keys": keys}
+        ]}), encoding="utf-8")
+        before = build_index(self.store, self.taxonomy, 512)
+
+        # Reassign just the opaque ID, reversing the ID order of the two members.
+        scope = self.store / "global"
+        old = scope / "active" / "memory-global.json"
+        new = old.rename(old.with_name("memory-zz.json"))
+        record = json.loads(new.read_text(encoding="utf-8"))
+        record["id"] = new.stem
+        new.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
+        (scope / "active-index.json").write_text(
+            json.dumps({"entries": {"preference:workflow.quota.recovery": new.stem}}),
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "add", "-A"], cwd=self.store, check=True)
+        subprocess.run(["git", "commit", "-qm", "Reimport fixture"], cwd=self.store, check=True)
+        after = build_index(self.store, self.taxonomy, 512)
+        self.assertNotEqual(before["cells"][0]["member_record_ids"], after["cells"][0]["member_record_ids"])
+        self.assertTrue(before["vectorizer"] == after["vectorizer"], "Record ID changed corpus IDF")
+        self.assertEqual(before["cells"][0]["vector"], after["cells"][0]["vector"])
+        self.assertEqual({r["key"]: r["vector"] for r in before["records"]},
+                         {r["key"]: r["vector"] for r in after["records"]})
 
     def test_query_hits_global_memory_by_vector_pointer(self) -> None:
         result = ranked(self.index, "429额度到了以后怎么断点恢复", 4, self.root)

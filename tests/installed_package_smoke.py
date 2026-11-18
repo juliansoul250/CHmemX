@@ -142,8 +142,16 @@ def main():
             cli("status", "--upload-id", pending["upload_id"])["upload"]["status"]
             == "ACTIVE_COMMITTED"
         )
+        assert cli("recall", "preference.editor.theme")["status"] == "NEEDS_UNDERSTANDING"
+        query_plan_path = root / "query-plan.json"
+        query_plan_path.write_text(json.dumps({
+            "version": 1, "query": "preference.editor.theme", "decision": "search",
+            "goal": "Look up the named editor theme preference.",
+            "entities": ["preference.editor.theme"], "constraints": [], "facets": [],
+        }), encoding="utf-8")
         assert (
-            cli("recall", "preference.editor.theme")["entries"][0]["body"] == "界面使用蓝色主题。"
+            cli("recall", "preference.editor.theme", "--query-plan", str(query_plan_path))["entries"][0]["body"]
+            == "界面使用蓝色主题。"
         )
         plan_path = root / "archive-plan.json"
         plan = cli(
@@ -161,7 +169,8 @@ def main():
         )
         assert cli("status", "--upload-id", pending["upload_id"])["upload"]["storage"] == "archive"
         assert (
-            cli("recall", "preference.editor.theme")["entries"][0]["body"] == "界面使用蓝色主题。"
+            cli("recall", "preference.editor.theme", "--query-plan", str(query_plan_path))["entries"][0]["body"]
+            == "界面使用蓝色主题。"
         )
         subprocess.run(
             ["git", "-C", str(root / "store"), "revert", "--no-edit", approved["commit"]],
@@ -173,7 +182,7 @@ def main():
             == "COMMIT_NOT_CURRENT"
         )
         assert cli("review", pending["upload_id"])["status"] == "COMMIT_NOT_CURRENT"
-        assert cli("recall", "preference.editor.theme")["entries"] == []
+        assert cli("recall", "preference.editor.theme", "--query-plan", str(query_plan_path))["entries"] == []
     print("INSTALLED_WHEEL_MCP_LIFECYCLE_PASS")
 
 

@@ -1,0 +1,1269 @@
+{
+  "date": "2026-11-17",
+  "status": "CANDIDATE_VERIFIED_NOT_RELEASE_GATE_PASS",
+  "published": false,
+  "source_checks": false,
+  "evidence_role": "historical diagnostic regression, not independent blind evaluation",
+  "tests": {
+    "python_3_10_1": {
+      "passed": 278,
+      "seconds": 89.388
+    },
+    "python_3_14_6": {
+      "passed": 278,
+      "seconds": 87.305
+    },
+    "ruff": "PASS",
+    "diff_check": "PASS",
+    "wheel_sdist": "PASS",
+    "external_installed_mcp_smoke": "PASS",
+    "official_compatible_multi_suite_cases": 66
+  },
+  "integrity": {
+    "live_head_unchanged": true,
+    "live_index_unchanged": true,
+    "live_model_lock_unchanged": true,
+    "live_tracked_clean": true,
+    "initial_files_preserved_outside_declared_edits": 108
+  },
+  "real": {
+    "lexical": {
+      "before": {
+        "noise_empty": 10,
+        "suites": [
+          {
+            "number": 1,
+            "cases": 70,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 70,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 1,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.935,
+              "mean_recall_at_k": 0.55714286,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.44285714
+            },
+            "thresholds": {
+              "min_top1": 0.85,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.9,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 1.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 2,
+            "cases": 61,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 61,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.86612022,
+              "mean_recall_at_k": 0.8579235,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.40983607
+            },
+            "thresholds": {
+              "min_top1": 0.9,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.95,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 3,
+            "cases": 5,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 5,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 5,
+              "association_hit_rate": 1.0,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 4,
+            "cases": 2,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 2,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 5,
+            "cases": 4,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 4,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 6,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.9,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.9,
+              "mrr": 0.9,
+              "mean_precision_at_k": 0.83333333,
+              "mean_recall_at_k": 0.41666667,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.1
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 7,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 7,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.3,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.3,
+              "mrr": 0.3,
+              "mean_precision_at_k": 0.25,
+              "mean_recall_at_k": 0.15,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 0.5
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          }
+        ]
+      },
+      "after": {
+        "noise_empty": 10,
+        "suites": [
+          {
+            "number": 1,
+            "cases": 70,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 70,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 1,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.935,
+              "mean_recall_at_k": 0.55714286,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.44285714
+            },
+            "thresholds": {
+              "min_top1": 0.85,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.9,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 1.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 2,
+            "cases": 61,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 61,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.86612022,
+              "mean_recall_at_k": 0.8579235,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.40983607
+            },
+            "thresholds": {
+              "min_top1": 0.9,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.95,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 3,
+            "cases": 5,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 5,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 5,
+              "association_hit_rate": 1.0,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 4,
+            "cases": 2,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 2,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 5,
+            "cases": 4,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 4,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 6,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.9,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.9,
+              "mrr": 0.9,
+              "mean_precision_at_k": 0.83333333,
+              "mean_recall_at_k": 0.41666667,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.1
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 7,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 7,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.3,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.3,
+              "mrr": 0.3,
+              "mean_precision_at_k": 0.25,
+              "mean_recall_at_k": 0.15,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 0.5
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          }
+        ]
+      }
+    },
+    "hybrid": {
+      "before": {
+        "noise_empty": 10,
+        "suites": [
+          {
+            "number": 1,
+            "cases": 70,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 70,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 1,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.935,
+              "mean_recall_at_k": 0.55714286,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.44285714
+            },
+            "thresholds": {
+              "min_top1": 0.85,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.9,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 1.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 2,
+            "cases": 61,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 61,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.86612022,
+              "mean_recall_at_k": 0.8579235,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.40983607
+            },
+            "thresholds": {
+              "min_top1": 0.9,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.95,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 3,
+            "cases": 5,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 5,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 5,
+              "association_hit_rate": 1.0,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 4,
+            "cases": 2,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 2,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 5,
+            "cases": 4,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 4,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 6,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.9,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.9,
+              "mrr": 0.9,
+              "mean_precision_at_k": 0.85333333,
+              "mean_recall_at_k": 0.45,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.6
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 7,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 6,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.4,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.7,
+              "mrr": 0.55333333,
+              "mean_precision_at_k": 0.475,
+              "mean_recall_at_k": 0.63333333,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 3.2
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          }
+        ]
+      },
+      "after": {
+        "noise_empty": 10,
+        "suites": [
+          {
+            "number": 1,
+            "cases": 70,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 70,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 1,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.935,
+              "mean_recall_at_k": 0.55714286,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.44285714
+            },
+            "thresholds": {
+              "min_top1": 0.85,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.9,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 1.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 2,
+            "cases": 61,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 61,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 0.86612022,
+              "mean_recall_at_k": 0.8579235,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.40983607
+            },
+            "thresholds": {
+              "min_top1": 0.9,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.95,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 3,
+            "cases": 5,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 5,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 5,
+              "association_hit_rate": 1.0,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 4,
+            "cases": 2,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 2,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 5,
+            "cases": 4,
+            "passed": true,
+            "failed_cases": 0,
+            "metrics": {
+              "positive_case_count": 4,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 1.0,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 1.0,
+              "mrr": 1.0,
+              "mean_precision_at_k": 1.0,
+              "mean_recall_at_k": 1.0,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.0
+            },
+            "thresholds": {
+              "min_top1": 0.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 0.0,
+              "min_precision_at_k": 0.0,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 6,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 1,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.9,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.9,
+              "mrr": 0.9,
+              "mean_precision_at_k": 0.85333333,
+              "mean_recall_at_k": 0.45,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 1.6
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          },
+          {
+            "number": 7,
+            "cases": 10,
+            "passed": false,
+            "failed_cases": 4,
+            "metrics": {
+              "positive_case_count": 10,
+              "abstention_case_count": 0,
+              "abstention_rate": null,
+              "top1": 0.6,
+              "association_case_count": 0,
+              "association_hit_rate": null,
+              "association_forbidden_hits": 0,
+              "association_scope_violations": 0,
+              "source_blocked_case_count": 0,
+              "hit_at_3": 0.8,
+              "mrr": 0.68333333,
+              "mean_precision_at_k": 0.515,
+              "mean_recall_at_k": 0.56666667,
+              "forbidden_hits": 0,
+              "scope_violations": 0,
+              "average_results": 3.0
+            },
+            "thresholds": {
+              "min_top1": 1.0,
+              "min_hit_at_3": 1.0,
+              "min_mrr": 1.0,
+              "min_precision_at_k": 0.2,
+              "min_recall_at_k": 0.0,
+              "min_abstention_rate": 0.0,
+              "max_forbidden_hits": 0,
+              "max_scope_violations": 0,
+              "min_association_hit_rate": 0.0,
+              "max_association_forbidden_hits": 0,
+              "max_association_scope_violations": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "synthetic": {
+    "lexical": {
+      "before": {
+        "exact": {
+          "cases": 16,
+          "passed": 16
+        },
+        "natural": {
+          "cases": 16,
+          "passed": 16
+        },
+        "paraphrase": {
+          "cases": 2,
+          "passed": 0
+        },
+        "crosslingual": {
+          "cases": 2,
+          "passed": 0
+        },
+        "abstention": {
+          "cases": 4,
+          "passed": 3
+        },
+        "scope": {
+          "cases": 2,
+          "passed": 2
+        },
+        "pending": {
+          "cases": 1,
+          "passed": 1
+        }
+      },
+      "after": {
+        "exact": {
+          "cases": 16,
+          "passed": 16
+        },
+        "natural": {
+          "cases": 16,
+          "passed": 16
+        },
+        "paraphrase": {
+          "cases": 2,
+          "passed": 0
+        },
+        "crosslingual": {
+          "cases": 2,
+          "passed": 0
+        },
+        "abstention": {
+          "cases": 4,
+          "passed": 4
+        },
+        "scope": {
+          "cases": 2,
+          "passed": 2
+        },
+        "pending": {
+          "cases": 1,
+          "passed": 1
+        }
+      }
+    },
+    "hybrid": {
+      "before": {
+        "exact": {
+          "cases": 16,
+          "passed": 16
+        },
+        "natural": {
+          "cases": 16,
+          "passed": 16
+        },
+        "paraphrase": {
+          "cases": 2,
+          "passed": 0
+        },
+        "crosslingual": {
+          "cases": 2,
+          "passed": 2
+        },
+        "abstention": {
+          "cases": 4,
+          "passed": 3
+        },
+        "scope": {
+          "cases": 2,
+          "passed": 2
+        },
+        "pending": {
+          "cases": 1,
+          "passed": 1
+        }
+      },
+      "after": {
+        "exact": {
+          "cases": 16,
+          "passed": 16
+        },
+        "natural": {
+          "cases": 16,
+          "passed": 16
+        },
+        "paraphrase": {
+          "cases": 2,
+          "passed": 0
+        },
+        "crosslingual": {
+          "cases": 2,
+          "passed": 2
+        },
+        "abstention": {
+          "cases": 4,
+          "passed": 4
+        },
+        "scope": {
+          "cases": 2,
+          "passed": 2
+        },
+        "pending": {
+          "cases": 1,
+          "passed": 1
+        }
+      }
+    }
+  },
+  "paired_latency_ms": {
+    "before": {
+      "p50_ms": 56.724791502347216,
+      "p95_ms": 61.2087499757763,
+      "samples": 30
+    },
+    "after": {
+      "p50_ms": 55.807041499065235,
+      "p95_ms": 61.564500007079914,
+      "samples": 30
+    }
+  },
+  "frozen_suite_sha256": [
+    "31569fd497181f075775ff0994be41c7648446325924f3d6901f9a362a25d625",
+    "dc14d2984983c5c9fbb90d53eebffda78318b569b43fbf1e00de7173420d63ac",
+    "c86d9fd686ce5254e0f12e677bffdf8c3b357e4a03931bf10eb92039a728998e",
+    "d84161cbedc0c8f9092575979cfedb2c8a5a8a0e7a33086d07d7595c6b53a59c",
+    "d97577eb935812e70d96341422fa65f91e7b2b4f98ed17eec2f8c9504431ba47",
+    "647c6444afa3850243d62f5d30eaf5b22195b0778305de0b8a8ead3eccfc350a",
+    "071ab76ca9e0194dc389a292e1288cb9567c52de7a40fb37d8df32ceccb13eb0",
+    "3bd4400c959cde214f44835ae90599e46bc2bfa98f352ab71a20b070752616ae"
+  ],
+  "candidate_index_sha256": "6b95a9db5ded60e78a7d3fa3c7c4df371400dd26750d6791e422f52b6b90dc8b",
+  "original_index_sha256": "efe2d1f2769451205b834afb7ac85f0b12888904d40cdb362e5a2f55ebb4a13a",
+  "chunks": {
+    "before": 192,
+    "after": 627
+  },
+  "compact_index_bytes": {
+    "before": 2591156,
+    "after": 4522956
+  },
+  "label_conflict_detected": true,
+  "remaining": {
+    "real_failed_cases": 6,
+    "real_retrieval_failures": 5,
+    "contradictory_label_cases": 1,
+    "synthetic_hybrid_failed_cases": 2
+  },
+  "rejected_experiment": "semantic-score-first fallback; original RRF retained",
+  "real_previously_passing_case_regressions": 0,
+  "evidence_sha256": {
+    "real-comparison.json": "877d94214e5636a6b10ffd725e676fbe97ffa41d9bbe2d2418fca0e1b6357d57",
+    "synthetic-comparison.json": "53dada74accd0e2cca4317ffd116bf0934d51a31da230945f88d29b22b6a6b12",
+    "paired-performance.json": "a83bf8f6ea0cb732a411169d1c5cf8039d62f437c6c97d8a5a95de5662d66826",
+    "final-tests314.log": "1e27de59422a89a03cf52dd05ccc73c6c2538534a680a90006738a6262ea82e6",
+    "final-tests310.log": "441f64924538f2483ef8a6eef366289f5b446782c924c8c85785b937c96413dd",
+    "build.log": "43972b906bbd48224be43da45966802fa22579451e7dc56025cc2eb9f18a2517",
+    "wheel-smoke.log": "f8dfc1271a7822e5b801fd1ddfb5fa6bf61bdbfd947a5de4b46a0a7cf435502e",
+    "official-multi.json": "cb75c415bf2d17acc55e64ba580d5c9c1ca22a1ce4a41e2db56a801df707cef2",
+    "tested-source-manifest.json": "e6272c7656001658eb0bcbfe6358e80d77c3411740e3045a30746fa266b7866f"
+  }
+}
